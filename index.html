@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L/R Mole</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: sans-serif;
+    background: #d0d0d0;
+    color: #444;
+    min-height: 100vh;
+  }
+  button, input {
+    font: inherit;
+    color: #444;
+    background: #bdbdbd;
+    border: 0;
+    border-radius: 0;
+  }
+  button { cursor: pointer; padding: 12px 16px; }
+  button:hover { background: #a8a8a8; }
+  button.on { background: #8a8a8a; color: #222; }
+  input[type="text"] { padding: 10px; width: 240px; max-width: 100%; }
+  .screen { display: none; min-height: 100vh; padding: 24px; }
+  .screen.show { display: block; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+  p, li { font-size: 14px; line-height: 1.5; }
+  ul { margin: 12px 0 20px 20px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .hud {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+  .hud div {
+    background: #c4c4c4;
+    padding: 12px 20px;
+    min-width: 100px;
+    text-align: center;
+  }
+  .holes {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-top: 40px;
+  }
+  .hole {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: #9a9a9a;
+  }
+  .hole.up { background: #c8c800; }
+  .hole.bad { background: #b44; }
+  .stats { margin: 16px 0; }
+  .stats p { margin: 6px 0; }
+  .stars { display: flex; gap: 10px; margin: 12px 0 20px; }
+  .star {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #cfcfcf;
+  }
+  .star.fill {
+    background: #ffd700;
+  }
+</style>
+</head>
+<body>
+<div id="title" class="screen show">
+  <h1>モグラたたきゲーム：英語 L/R 知覚訓練（試験版）</h1>
+  <p>ユーザー名（任意）</p>
+  <p style="margin:8px 0 16px"><input id="name" type="text" maxlength="40" placeholder="nickname"></p>
+  <p>モード</p>
+  <div class="row">
+    <button id="modeWord" class="on" type="button">単語モード</button>
+    <button id="modeSentence" type="button">英文モード</button>
+  </div>
+  <ul>
+    <li>「L」の音を発するモグラと無音のモグラをタップする。</li>
+    <li>「R」の音を発するモグラはタップせず見送る。</li>
+    <li>穴は左から F / G / H / J キー、またはクリック。</li>
+    <li>モグラをタップしたときの効果音（voo, boo）に気を取られないように。</li>
+  </ul>
+<div class="row">
+  <button id="start" type="button">ゲームスタート</button>
+  <button id="showLogs" type="button">プレイ履歴</button>
+  <button id="dlAll" type="button">全ゲームログをダウンロード（CSV）</button>
+  <button id="clearLogs" type="button">ログを全削除</button>
+  <p id="logCount"></p>
+</div>
+</div>
+
+<div id="play" class="screen" hidden>
+  <div class="hud">
+    <div>ライフ<br><span id="life">5</span></div>
+    <div>コンボ<br><span id="combo">0</span></div>
+    <div>スコア<br><span id="score">0</span></div>
+  </div>
+  <div class="holes">
+    <div class="hole" data-i="0"></div>
+    <div class="hole" data-i="1"></div>
+    <div class="hole" data-i="2"></div>
+    <div class="hole" data-i="3"></div>
+  </div>
+</div>
+
+<div id="result" class="screen" hidden>
+  <h1>結果</h1>
+  <div class="stats">
+    <p>スコア：<span id="rScore">0</span></p>
+    <p>成功率 L：<span id="rL">-</span></p>
+    <p>成功率 R：<span id="rR">-</span></p>
+    <p>成功率 無音：<span id="rS">-</span></p>
+    <p>タップ成功 平均反応速度：<span id="rRt">-</span></p>
+  </div>
+  <div class="stars" id="stars"></div>
+  <p id="starLabel" style="margin-bottom:16px"></p>
+<div class="row">
+  <button id="showPlayLog" type="button">今回のプレイログを見る</button>
+  <button id="again" type="button">もう一度プレイ</button>
+</div>
+</div>
+
+<div id="playLog" class="screen" hidden>
+  <h1>今回のプレイログ</h1>
+  <div id="playLogList"></div>
+  <div class="row">
+    <button id="playLogBack" type="button">
+      戻る
+    </button>
+  </div>
+</div>
+
+<div id="history" class="screen" hidden>
+  <h1>プレイ履歴</h1>
+  <div id="historyList"></div>
+  <div class="row">
+    <button id="historyBack" type="button">
+      戻る
+    </button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const INITIAL_LIFE = 5;
+  const MAX_LIFE = 5;
+  const MOLES_PER_STAGE = 30;
+  const POST_AUDIO_LINGER_RATIO = 3.0;
+  const MAX_LINGER_MS = 3000;
+  const MIN_STIMULUS_RATE = 0.8;
+  const MAX_STIMULUS_RATE = 1.8;
+  const MIN_SFX_RATE = 0.5;
+  const MAX_SFX_RATE = 3.0;
+  const SFX_VOLUME_RATIO = 0.6;
+  const SFX_DURATION_RATIO = 0.7;
+  const COMBO_LIFE_EVERY = 5;
+  const MAX_GAMES = 500;
+  const BASE_AUDIO_MS = 700;
+  const RED_MS = 300;
+  const RESPAWN_DELAY_MS = 80;
+  const STORAGE_KEY = "lrMoleGames_v1";
+  const KEYS = ["f", "g", "h", "j"];
+
+  const WORD_L = ["./sound/light_01.mp3","./sound/light_02.mp3","./sound/light_03.mp3","./sound/light_04.mp3","./sound/light_05.mp3","./sound/light_06.mp3","./sound/light_07.mp3","./sound/light_08.mp3","./sound/light_09.mp3","./sound/light_10.mp3"];
+  const WORD_R = ["./sound/right_01.mp3","./sound/right_02.mp3","./sound/right_03.mp3","./sound/right_04.mp3","./sound/right_05.mp3","./sound/right_06.mp3","./sound/right_07.mp3","./sound/right_08.mp3","./sound/right_09.mp3","./sound/right_10.mp3"];
+  const SENTENCE_L = ["./sound/I_led_it_01.mp3","./sound/I_led_it_02.mp3","./sound/I_led_it_03.mp3","./sound/I_led_it_04.mp3","./sound/I_led_it_05.mp3","./sound/I_led_it_06.mp3","./sound/I_led_it_07.mp3","./sound/I_led_it_08.mp3","./sound/I_led_it_09.mp3","./sound/I_led_it_10.mp3"];
+  const SENTENCE_R = ["./sound/I_read_it_01.mp3","./sound/I_read_it_02.mp3","./sound/I_read_it_03.mp3","./sound/I_read_it_04.mp3","./sound/I_read_it_05.mp3","./sound/I_read_it_06.mp3","./sound/I_read_it_07.mp3","./sound/I_read_it_08.mp3","./sound/I_read_it_09.mp3","./sound/I_read_it_10.mp3"];
+  const SILENT_FILE = "./sound/silent.mp3";
+  const SFX_V = ["./sound/voo_01.mp3","./sound/voo_02.mp3","./sound/voo_03.mp3","./sound/voo_04.mp3","./sound/voo_05.mp3","./sound/voo_06.mp3","./sound/voo_07.mp3","./sound/voo_08.mp3","./sound/voo_09.mp3","./sound/voo_10.mp3"];
+  const SFX_B = ["./sound/boo_01.mp3","./sound/boo_02.mp3","./sound/boo_03.mp3","./sound/boo_04.mp3","./sound/boo_05.mp3","./sound/boo_06.mp3","./sound/boo_07.mp3","./sound/boo_08.mp3","./sound/boo_09.mp3","./sound/boo_10.mp3"];
+  const SFX_V_SILENT = "./sound/voo_silent.mp3";
+  const SFX_B_SILENT = "./sound/boo_silent.mp3";
+
+  const el = (id) => document.getElementById(id);
+  const holes = [...document.querySelectorAll(".hole")];
+  let mode = "word";
+  let ctx = null;
+  let game = null;
+  let lastRecords = [];
+  const missingFiles = new Set();
+  let audioVerified = false;
+
+function show(id) {
+    ["title", "play", "result", "history", "playLog"].forEach((s) => {
+      const on = s === id;
+      el(s).classList.toggle("show", on);
+      el(s).hidden = !on;
+    });
+  }
+
+  function rand(n) {
+    return Math.floor(Math.random() * n);
+  }
+
+  function pickType() {
+    const r = Math.random();
+    if (r < 0.4) return "L";
+    if (r < 0.8) return "R";
+    return "silent";
+}
+  function speedAt(i) {
+    const p = i / Math.max(1, MOLES_PER_STAGE - 1);
+    const trend = 1 + p * 0.7;
+    const wave = 1 + 0.38 * Math.sin(p * Math.PI * 4);
+    return trend * wave;
+  }
+  function filesFor(kind) {
+    if (kind === "silent") return { src: SILENT_FILE, id: SILENT_FILE };
+    if (mode === "word") return kind === "L" ? WORD_L : WORD_R;
+    return kind === "L" ? SENTENCE_L : SENTENCE_R;
+  }
+
+  function ensureAudio() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  function beep(freq, ms, type, gainVal) {
+    const ac = ensureAudio();
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    g.gain.value = gainVal || 0.08;
+    o.connect(g);
+    g.connect(ac.destination);
+    const t = ac.currentTime;
+    o.start(t);
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + ms / 1000);
+    o.stop(t + ms / 1000);
+  }
+
+  function synthStimulus(kind, speaker, durMs) {
+    const ac = ensureAudio();
+    const t = ac.currentTime;
+    const d = durMs / 1000;
+    const base = 160 + speaker * 18;
+    const f1 = kind === "L" ? base * 2.4 : base * 1.35;
+    const f2 = kind === "L" ? base * 5.5 : base * 3.1;
+    [f1, f2].forEach((f, i) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = i ? "triangle" : "sine";
+      o.frequency.value = f;
+      g.gain.value = i ? 0.04 : 0.07;
+      o.connect(g);
+      g.connect(ac.destination);
+      o.start(t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + d);
+      o.stop(t + d);
+    });
+  }
+
+  function synthSfx(ok, speaker, silent) {
+    const s = silent ? 0 : speaker;
+    if (ok) beep(260 + s * 12, 180 * SFX_DURATION_RATIO, "sine", 0.1 * SFX_VOLUME_RATIO);
+    else beep(140 + s * 8, 220 * SFX_DURATION_RATIO, "square", 0.08 * SFX_VOLUME_RATIO);
+  }
+
+  function playFile(src, rate, volume = 1.0, minRate = 0.5, maxRate = 3.0) {
+    return new Promise((resolve) => {
+      if (!src || missingFiles.has(src)) {
+        resolve({ ms: 0, usedFile: false });
+        return;
+      }
+      let done = false;
+      const finish = (ms, usedFile) => {
+        if (done) return;
+        done = true;
+        if (!usedFile) missingFiles.add(src);
+        resolve({ ms, usedFile });
+      };
+      const a = new Audio(src);
+      a.volume = volume;
+      a.preservesPitch = true;
+      a.mozPreservesPitch = true;
+      a.webkitPreservesPitch = true;
+      const actualRate = Math.max(minRate, Math.min(maxRate, rate));
+
+//for debug
+console.log(
+  "[Rate]",
+  src,
+  "requested=",
+  rate,
+  "actual=",
+  actualRate
+);
+//
+
+      a.playbackRate = actualRate;
+      const t = setTimeout(() => finish(0, false), 1000);
+      a.addEventListener("error", () => { clearTimeout(t); finish(0, false); });
+      a.addEventListener("loadedmetadata", () => {
+        if (!isFinite(a.duration) || a.duration <= 0) {
+          clearTimeout(t);
+          finish(0, false);
+          return;
+        }
+        a.play().then(() => {
+          clearTimeout(t);
+          finish((a.duration / a.playbackRate) * 1000, true);
+        }).catch(() => { clearTimeout(t); finish(0, false); });
+      });
+    });
+  }
+
+  async function playStimulus(kind, speaker, rate) {
+    const dur = BASE_AUDIO_MS / rate;
+    if (kind === "silent") {
+      const file = filesFor("silent");
+      const r = await playFile(file.src || file, rate, 1.0, MIN_STIMULUS_RATE, MAX_STIMULUS_RATE);
+      if (!r.usedFile) { console.warn("[Missing Audio]", SILENT_FILE); }
+      return { ms: r.usedFile ? r.ms : dur, speakerId: SILENT_FILE };
+    }
+    const list = filesFor(kind);
+    const src = list[speaker];
+    const r = await playFile(src, rate, 1.0, MIN_STIMULUS_RATE, MAX_STIMULUS_RATE);
+    if (!r.usedFile) {
+      console.warn("[Missing Audio]", src);
+      synthStimulus(kind, speaker, dur);
+    }
+    return { ms: r.usedFile ? r.ms : dur, speakerId: src };
+  }
+
+  async function playFeedback(ok, speaker, silent) {
+    const src = silent ? (ok ? SFX_V_SILENT : SFX_B_SILENT) : (ok ? SFX_V[speaker] : SFX_B[speaker]);
+    const r = await playFile(src, 1 / SFX_DURATION_RATIO, SFX_VOLUME_RATIO, MIN_SFX_RATE, MAX_SFX_RATE);
+    if (!r.usedFile) {
+      console.warn("[Missing Audio]", src);
+      synthSfx(ok, speaker, silent);
+    }
+  }
+
+  function loadGames() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const data = raw ? JSON.parse(raw) : { games: [] };
+      return Array.isArray(data.games) ? data.games : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveGames(games) {
+    const cut = games.slice(-MAX_GAMES);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ games: cut }));
+    } catch (e) {
+
+      console.warn("localStorage容量上限", e);
+      // 古いデータ半分削除
+      const smaller = cut.slice(Math.floor(cut.length / 2));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ games: smaller }));
+      } catch (_) {}
+    }
+    updateLogCount();
+  }
+
+/**
+ * 保存済みプレイログを全削除する
+ */
+  function clearLogs() {
+    localStorage.removeItem(STORAGE_KEY);
+    lastRecords = [];
+    updateLogCount();
+    alert("保存済みのプレイログを削除しました。");
+  }
+
+  function updateLogCount() {
+    const count = loadGames().length;
+    el("logCount").textContent = `保存済みゲーム数: ${count}`;
+  }
+
+  function csvEscape(v) {
+    const s = v == null ? "" : String(v);
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function toCsv(rows) {
+    const head = ["ユーザー名","プレイ日時","ステージモード","出現音声","話者ID","正誤","反応速度（ミリ秒）"];
+    const body = rows.map((r) => [
+      r.user, r.time, r.mode, r.stim, r.speakerId, r.result, r.rt == null ? "" : r.rt
+    ].map(csvEscape).join(","));
+    return "\uFEFF" + [head.join(","), ...body].join("\r\n");
+  }
+  function downloadCsv(name, rows) {
+    const blob = new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function hud() {
+    el("life").textContent = game.life;
+    el("combo").textContent = game.combo;
+    el("score").textContent = game.score;
+  }
+
+  function setHole(i, cls) {
+    holes[i].className = "hole" + (cls ? " " + cls : "");
+  }
+
+  function occupy() {
+    return game.moles.map((m) => m.hole);
+  }
+
+  function finishIfNeeded() {
+    if (!game || game.ended) return;
+    const over = game.life <= 0;
+    const clear = game.spawned >= MOLES_PER_STAGE && game.moles.filter((m) => !m.done).length === 0 && !game.spawning;
+    if (!over && !clear) return;
+    game.ended = true;
+    clearTimeout(game.nextTimer);
+    game.moles.forEach((m) => {
+      m.done = true;
+      clearTimeout(m.lingerTimer);
+      setHole(m.hole, "");
+    });
+    game.moles = [];
+    const games = loadGames();
+    games.push({ at: new Date().toISOString(), score: game.score, records: game.records.slice() });
+    saveGames(games);
+    lastRecords = game.records.slice();
+    renderResult();
+    show("result");
+  }
+
+  function record(mole, result, rt) {
+    const stim = mole.kind === "silent" ? "無音" : mole.kind;
+    game.records.push({
+      user: game.user,
+      time: mole.time,
+      mode: mode === "word" ? "単語" : "英文",
+      stim,
+      speakerId: mole.speakerId,
+      result,
+      rt
+    });
+  }
+
+  function applyCorrect(mole, rt) {
+    game.score += 100;
+    game.combo += 1;
+    if (game.combo > 0 && game.combo % COMBO_LIFE_EVERY === 0 && game.life < MAX_LIFE) {
+      game.life += 1;
+    }
+    hud();
+    record(mole, "正解", rt);
+    playFeedback(true, mole.speaker, mole.kind === "silent");
+  }
+
+  function applyMiss(mole, result, rt) {
+    game.life = Math.max(0, game.life - 1);
+    game.combo = 0;
+    hud();
+    record(mole, result, rt);
+    playFeedback(false, mole.speaker, mole.kind === "silent");
+  }
+
+  function removeMole(mole) {
+    const i = game.moles.indexOf(mole);
+    if (i >= 0) game.moles.splice(i, 1);
+    if (!game.moles.some((m) => m.hole === mole.hole && m !== mole)) setHole(mole.hole, "");
+  }
+
+  function retract(mole, bad) {
+    if (mole.done) return;
+    mole.done = true;
+    clearTimeout(mole.lingerTimer);
+    if (bad) {
+      setHole(mole.hole, "bad");
+      setTimeout(() => {
+        removeMole(mole);
+        finishIfNeeded();
+        if (game && !game.ended && game.spawned < MOLES_PER_STAGE) {
+          spawn();
+        }
+      }, RED_MS);
+
+    } else {
+      removeMole(mole);
+      finishIfNeeded();
+      if (game && !game.ended && game.spawned < MOLES_PER_STAGE) {
+        setTimeout(() => {
+          if (!game || game.ended) return;
+          spawn();
+        }, RESPAWN_DELAY_MS);
+      }
+    }
+  }
+
+/**
+ * 制限時間切れ処理
+ *
+ * 押すべきモグラを押さなかった:
+ *   見落とし
+ *
+ * Rを正しくスルー:
+ *   正解
+ */
+  function onTimeout(mole) {
+    if (mole.done) return;
+    const shouldTap = mole.kind !== "R";
+    if (shouldTap) {
+      applyMiss(mole, "見落とし", null);
+      retract(mole, true);
+    } else {
+      applyCorrect(mole, null);
+      retract(mole, false);
+    }
+  }
+
+/**
+ * プレイヤーが穴を叩いた時の処理
+ *
+ * L      → 叩く
+ * silent → 叩く
+ * R      → 見送る
+ */
+  function hit(hole) {
+    if (!game || game.ended) return;
+    const mole = game.moles.find((m) => m.hole === hole && !m.done);
+    if (!mole) {
+      return;
+    }
+    const rt = Math.round(performance.now() - mole.t0);
+    const shouldTap = mole.kind !== "R";
+    if (shouldTap) {
+      applyCorrect(mole, rt);
+      retract(mole, false);
+    } else {
+      applyMiss(mole, "お手つき", rt);
+      retract(mole, true);
+    }
+  }
+
+/**
+ * モグラ生成処理
+ *
+ * 処理手順
+ * 1. 出現位置決定
+ * 2. L/R/無音決定
+ * 3. 話者決定
+ * 4. 音声再生
+ * 5. 反応受付
+ * 6. 次モグラ予約
+ */
+  async function spawn() {
+    if (!game || game.ended || game.spawned >= MOLES_PER_STAGE || game.life <= 0) {
+      if (game) game.spawning = false;
+      finishIfNeeded();
+      return;
+    }
+    game.spawning = true;
+    const used = occupy();
+    const free = [0, 1, 2, 3].filter((i) => !used.includes(i));
+    const hole = (free.length ? free : [0, 1, 2, 3])[rand(free.length || 4)];
+    //最初の２匹をLかRにする。
+    let kind;
+    if (game.spawned < 2) {
+      kind = Math.random() < 0.5 ? "L" : "R";
+    } else {
+      kind = pickType();
+    }
+    let speaker;
+    if (kind === "silent") {
+      speaker = 0;
+    } else if (game.spawned < 10) {
+      speaker = game.speaker0;
+    } else if (game.spawned < 20) {
+      speaker = Math.random() < 0.5 ? game.speaker0 : (game.speaker0 + 1) % 10;
+    } else {
+      speaker = rand(10);
+    }
+    const rate = speedAt(game.spawned);
+    const mole = {
+      hole, kind, speaker, speakerId: "", time: new Date().toISOString(),
+      t0: performance.now(), done: false, lingerTimer: null
+    };
+    game.moles.push(mole);
+    game.spawned += 1;
+    setHole(hole, "up");
+    const audio = await playStimulus(kind, speaker, rate);
+    game.spawning = false;
+    mole.speakerId = audio.speakerId;
+    if ( !game || game.ended || game.life <= 0) {
+      removeMole(mole);
+      return;
+    }
+    const linger = Math.min(audio.ms * POST_AUDIO_LINGER_RATIO, MAX_LINGER_MS);
+    mole.lingerTimer = setTimeout(() => onTimeout(mole), linger);
+  }
+
+  async function checkAudioFile(src) {
+    return new Promise((resolve) => {
+      const a = new Audio();
+      const ok = () => resolve(true);
+      const ng = () => resolve(false);
+      a.addEventListener("canplaythrough", ok, { once: true });
+      a.addEventListener("error", ng, { once: true });
+      a.src = src;
+    });
+  }
+
+  async function verifyAudioAssets() {
+    const files = [
+      ...WORD_L,
+      ...WORD_R,
+      ...SENTENCE_L,
+      ...SENTENCE_R,
+      SILENT_FILE,
+      ...SFX_V,
+      ...SFX_B,
+      SFX_V_SILENT,
+      SFX_B_SILENT
+    ];
+
+    const results = await Promise.all(files.map(src => checkAudioFile(src)));
+    const missing = [];
+    results.forEach((ok, i) => {
+      if (!ok) {
+        missing.push(files[i]);
+        missingFiles.add(files[i]);
+      }
+    });
+    if (missing.length) {
+      console.warn(
+        "[Missing Audio Files]"
+      );
+      missing.forEach(src => {
+        console.warn(src);
+      });
+    } else {
+      console.log(
+        "[Audio Check OK]"
+      );
+    }
+  }
+
+/**
+ * 新しいゲームを開始する
+ *
+ * 初期化内容:
+ * - スコア
+ * - ライフ
+ * - モグラ一覧
+ * - プレイログ
+ */
+  async function startGame() {
+  if (!audioVerified) {
+    await verifyAudioAssets();
+    audioVerified = true;
+  }
+    ensureAudio();
+    game = {
+      user: el("name").value.trim(),
+      life: INITIAL_LIFE,
+      combo: 0,
+      score: 0,
+      spawned: 0,
+      moles: [],
+      records: [],
+      speaker0: rand(10),
+      ended: false,
+      spawning: false,
+      nextTimer: null
+    };
+    holes.forEach((h) => { h.className = "hole"; });
+    hud();
+    show("play");
+    spawn();
+  }
+
+  function pct(n, d) {
+    if (!d) return "-";
+    return Math.round((n / d) * 1000) / 10 + "%";
+  }
+
+  function summarizeGame(gameData) {
+    const records = gameData.records || [];
+    const score = gameData.score ?? records.filter(r => r.result === "正解").length * 100;
+    const avgRtList = records.filter(r => r.result === "正解" && r.rt != null);
+    const avgRt = avgRtList.length ? Math.round( avgRtList.reduce((a, r) => a + r.rt, 0) / avgRtList.length) : null;
+    const rate = (stim) => {
+      const sub = records.filter(r => r.stim === stim);
+      if (!sub.length)
+        return "-";
+      const ok = sub.filter(r => r.result === "正解").length;
+      return Math.round(ok / sub.length * 100);
+    };
+    return {score, avgRt, l: rate("L"), r: rate("R"), s: rate("無音")
+    };
+  }
+
+  function renderPlayLog() {
+    const html = lastRecords.map((r, i) => `
+    <div style="
+      margin-bottom:6px;
+      padding:8px;
+      background:#c4c4c4;
+    ">
+      ${i + 1}
+      |
+      ${r.stim}
+      |
+      ${r.result}
+      |
+      ${r.rt == null ? "-" : r.rt + " ms"}
+    </div>
+  `).join("");
+    el("playLogList").innerHTML =
+    html || "<p>ログなし</p>";
+  }
+
+  function renderHistory() {
+    const games = loadGames().slice().reverse();
+    const html = games.map(g => {
+      const stat = summarizeGame(g);
+      return `
+        <div style="
+          margin-bottom:16px;
+          padding:12px;
+          background:#c4c4c4;
+        ">
+          <p>${new Date(g.at)
+                .toLocaleString()}</p>
+          <p>スコア:
+             ${stat.score}</p>
+          <p>L:
+             ${stat.l}%</p>
+          <p>R:
+             ${stat.r}%</p>
+          <p>無音:
+             ${stat.s}%</p>
+          <p>平均反応:
+             ${stat.avgRt ?? "-"} ms</p>
+        </div>
+      `;
+      }).join("");
+    el("historyList").innerHTML = html || "<p>履歴なし</p>";
+  }
+
+  function renderResult() {
+    const rec = lastRecords;
+    el("rScore").textContent = game ? game.score : rec.filter((r) => r.result === "正解").length * 100;
+    ["L", "R", "無音"].forEach((k, i) => {
+      const sub = rec.filter((r) => r.stim === k);
+      const ok = sub.filter((r) => r.result === "正解").length;
+      el(["rL", "rR", "rS"][i]).textContent = pct(ok, sub.length) + "（" + ok + "/" + sub.length + "）";
+    });
+    const taps = rec.filter((r) => r.result === "正解" && r.rt != null);
+    const avg = taps.length ? Math.round(taps.reduce((a, r) => a + r.rt, 0) / taps.length) : null;
+    el("rRt").textContent = avg == null ? "（タップ成功なし）" : avg + " ms";
+    let stars = 1;
+    let label = "星1";
+    if (avg != null && avg <= 1000) { stars = 3; label = "星3（マスター）"; }
+    else if (avg != null && avg <= 1300) { stars = 2; label = "星2"; }
+    el("stars").innerHTML = [1, 2, 3].map((n) => '<div class="star' + (n <= stars ? " fill" : "") + '"></div>').join("");
+    el("starLabel").textContent = label;
+  }
+
+  el("modeWord").onclick = () => {
+    mode = "word";
+    el("modeWord").classList.add("on");
+    el("modeSentence").classList.remove("on");
+  };
+  el("modeSentence").onclick = () => {
+    mode = "sentence";
+    el("modeSentence").classList.add("on");
+    el("modeWord").classList.remove("on");
+  };
+  el("start").onclick = startGame;
+  el("again").onclick = () => show("title");
+  el("dlAll").onclick = () => {
+    const rows = loadGames().flatMap((g) => g.records || []);
+    downloadCsv("all-game-logs.csv", rows);
+  };
+  el("showLogs").onclick = () => {
+    renderHistory();
+    show("history");
+  };
+  el("historyBack").onclick = () => show("title");
+  el("clearLogs").onclick = () => {
+    const ok = confirm("保存済みログをすべて削除しますか？");
+    if (!ok) return;
+    clearLogs();
+  };
+  el("showPlayLog").onclick = () => {
+    renderPlayLog();
+    show("playLog");
+  };
+  el("playLogBack").onclick = () => show("result");
+  holes.forEach((h) => {
+    h.addEventListener("click", () => hit(Number(h.dataset.i)));
+  });
+  document.addEventListener("keydown", (e) => {
+    const i = KEYS.indexOf(e.key.toLowerCase());
+    if (i >= 0 && el("play").classList.contains("show")) {
+      e.preventDefault();
+      hit(i);
+    }
+  });
+  updateLogCount();
+})();
+</script>
+</body>
+</html>
