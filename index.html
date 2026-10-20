@@ -72,7 +72,7 @@
 <body>
 <div id="title" class="screen show">
   <h1>モグラたたきゲーム：英語 L/R 知覚訓練（試験版）</h1>
-  <p>ユーザー名（任意）</p>
+  <p id="username-label">ユーザー名（任意）</p>
   <p style="margin:8px 0 16px"><input id="name" type="text" maxlength="40" placeholder="nickname"></p>
   <p>モード</p>
   <div class="row">
@@ -147,26 +147,26 @@
 
 <script>
 (function () {
-  const STUDENT_MODE = true;
-  const START_DELAY_MS = 700;
-  const END_DELAY_MS = 500;
-  const SILENT_SPEAKER = 3;
+  const STUDENT_MODE = true;			// 生徒用モード。履歴の確認、CSVダウンロードなどのボタンを隠すためのもの.
+  const START_DELAY_MS = 700;			// ゲーム画面に遷移後、ゲームが始まるまでの時間.
+  const END_DELAY_MS = 500;			// ゲームが終了後、結果画面に遷移するまでの時間.
+  const SILENT_SPEAKER = 3;			// 無音のモグラの時に割り当てられる話者のインデックス番号（Oから始まる）.
   const INITIAL_LIFE = 5;
   const MAX_LIFE = 5;
   const MOLES_PER_STAGE = 30;
-  const POST_AUDIO_LINGER_RATIO = 3.0;
-  const MAX_LINGER_MS = 3000;
-  const MIN_STIMULUS_RATE = 0.8;
-  const MAX_STIMULUS_RATE = 1.8;
-  const MIN_SFX_RATE = 0.5;
-  const MAX_SFX_RATE = 3.0;
-  const SFX_VOLUME_RATIO = 0.6;
-  const SFX_DURATION_RATIO = 0.7;
   const COMBO_LIFE_EVERY = 5;
-  const MAX_GAMES = 500;
-  const BASE_AUDIO_MS = 700;
-  const RED_MS = 300;
-  const RESPAWN_DELAY_MS = 80;
+  const POST_AUDIO_LINGER_RATIO = 3.0;	// 音声再生後にモグラが画面に残る時間.
+  const MAX_LINGER_MS = 3000;			// 音声再生後にモグラが画面にこのる時間の上限.
+  const MIN_STIMULUS_RATE = 0.8;		// 音声を減速させる係数の最小値.
+  const MAX_STIMULUS_RATE = 1.8;		// 音声を加速させる係数の最大値.
+  const MIN_SFX_RATE = 0.5;			// 正解・不正解の効果音を減速させる係数の最小値.
+  const MAX_SFX_RATE = 3.0;			// 正解・不正解の効果音を加速させる係数の最大値.
+  const SFX_VOLUME_RATIO = 0.6;			// 正解・不正解の効果音の音量の規定値を決める係数.
+  const SFX_DURATION_RATIO = 0.7;		// 正解・不正解の効果音の再生時間の規定値を決める係数.
+  const MAX_GAMES = 500;				// ローカルのログに保存されるゲームの最大値.
+  const BASE_AUDIO_MS = 700;			// 音声ファイルが読み込めなかったときには合成音を使うことになる。その合成音の既定の長さ.
+  const RED_MS = 300;					// 不正解の時にモグラが赤色になる時間.
+  const RESPAWN_DELAY_MS = 80;		// 次のモグラが現れるまでの待ち時間.
   const STORAGE_KEY = "lrMoleGames_v1";
   const KEYS = ["f", "g", "h", "j"];
 
@@ -817,8 +817,10 @@ console.log(
   });
   updateLogCount();
 
-// 生徒版では管理用UIを非表示
+// 生徒版ではユーザー名や管理用UIを非表示
   if (STUDENT_MODE) {
+    el("username-label").style.display = "none";
+    el("name").parentElement.style.display = "none";
     el("dlAll").style.display = "none";
     el("clearLogs").style.display = "none";
     el("showLogs").style.display = "none";
