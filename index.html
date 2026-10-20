@@ -147,6 +147,10 @@
 
 <script>
 (function () {
+  const STUDENT_MODE = true;
+  const START_DELAY_MS = 700;
+  const END_DELAY_MS = 500;
+  const SILENT_SPEAKER = 3;
   const INITIAL_LIFE = 5;
   const MAX_LIFE = 5;
   const MOLES_PER_STAGE = 30;
@@ -170,11 +174,8 @@
   const WORD_R = ["./sound/right_01.mp3","./sound/right_02.mp3","./sound/right_03.mp3","./sound/right_04.mp3","./sound/right_05.mp3","./sound/right_06.mp3","./sound/right_07.mp3","./sound/right_08.mp3","./sound/right_09.mp3","./sound/right_10.mp3"];
   const SENTENCE_L = ["./sound/I_led_it_01.mp3","./sound/I_led_it_02.mp3","./sound/I_led_it_03.mp3","./sound/I_led_it_04.mp3","./sound/I_led_it_05.mp3","./sound/I_led_it_06.mp3","./sound/I_led_it_07.mp3","./sound/I_led_it_08.mp3","./sound/I_led_it_09.mp3","./sound/I_led_it_10.mp3"];
   const SENTENCE_R = ["./sound/I_read_it_01.mp3","./sound/I_read_it_02.mp3","./sound/I_read_it_03.mp3","./sound/I_read_it_04.mp3","./sound/I_read_it_05.mp3","./sound/I_read_it_06.mp3","./sound/I_read_it_07.mp3","./sound/I_read_it_08.mp3","./sound/I_read_it_09.mp3","./sound/I_read_it_10.mp3"];
-  const SILENT_FILE = "./sound/silent.mp3";
   const SFX_V = ["./sound/voo_01.mp3","./sound/voo_02.mp3","./sound/voo_03.mp3","./sound/voo_04.mp3","./sound/voo_05.mp3","./sound/voo_06.mp3","./sound/voo_07.mp3","./sound/voo_08.mp3","./sound/voo_09.mp3","./sound/voo_10.mp3"];
   const SFX_B = ["./sound/boo_01.mp3","./sound/boo_02.mp3","./sound/boo_03.mp3","./sound/boo_04.mp3","./sound/boo_05.mp3","./sound/boo_06.mp3","./sound/boo_07.mp3","./sound/boo_08.mp3","./sound/boo_09.mp3","./sound/boo_10.mp3"];
-  const SFX_V_SILENT = "./sound/voo_silent.mp3";
-  const SFX_B_SILENT = "./sound/boo_silent.mp3";
 
   const el = (id) => document.getElementById(id);
   const holes = [...document.querySelectorAll(".hole")];
@@ -210,7 +211,6 @@ function show(id) {
     return trend * wave;
   }
   function filesFor(kind) {
-    if (kind === "silent") return { src: SILENT_FILE, id: SILENT_FILE };
     if (mode === "word") return kind === "L" ? WORD_L : WORD_R;
     return kind === "L" ? SENTENCE_L : SENTENCE_R;
   }
@@ -258,8 +258,8 @@ function show(id) {
     });
   }
 
-  function synthSfx(ok, speaker, silent) {
-    const s = silent ? 0 : speaker;
+  function synthSfx(ok, speaker) {
+    const s = speaker;
     if (ok) beep(260 + s * 12, 180 * SFX_DURATION_RATIO, "sine", 0.1 * SFX_VOLUME_RATIO);
     else beep(140 + s * 8, 220 * SFX_DURATION_RATIO, "square", 0.08 * SFX_VOLUME_RATIO);
   }
@@ -315,10 +315,12 @@ console.log(
   async function playStimulus(kind, speaker, rate) {
     const dur = BASE_AUDIO_MS / rate;
     if (kind === "silent") {
-      const file = filesFor("silent");
-      const r = await playFile(file.src || file, rate, 1.0, MIN_STIMULUS_RATE, MAX_STIMULUS_RATE);
-      if (!r.usedFile) { console.warn("[Missing Audio]", SILENT_FILE); }
-      return { ms: r.usedFile ? r.ms : dur, speakerId: SILENT_FILE };
+      const src = mode === "word" ? WORD_L[speaker] : SENTENCE_L[speaker];
+      const r = await playFile(src, rate, 0, MIN_STIMULUS_RATE, MAX_STIMULUS_RATE);
+      return {
+        ms: r.usedFile ? r.ms : dur,
+        speakerId: src
+      };
     }
     const list = filesFor(kind);
     const src = list[speaker];
@@ -330,12 +332,12 @@ console.log(
     return { ms: r.usedFile ? r.ms : dur, speakerId: src };
   }
 
-  async function playFeedback(ok, speaker, silent) {
-    const src = silent ? (ok ? SFX_V_SILENT : SFX_B_SILENT) : (ok ? SFX_V[speaker] : SFX_B[speaker]);
+  async function playFeedback(ok, speaker) {
+    const src = ok ? SFX_V[speaker] : SFX_B[speaker];
     const r = await playFile(src, 1 / SFX_DURATION_RATIO, SFX_VOLUME_RATIO, MIN_SFX_RATE, MAX_SFX_RATE);
     if (!r.usedFile) {
       console.warn("[Missing Audio]", src);
-      synthSfx(ok, speaker, silent);
+      synthSfx(ok, speaker);
     }
   }
 
@@ -432,8 +434,10 @@ console.log(
     games.push({ at: new Date().toISOString(), score: game.score, records: game.records.slice() });
     saveGames(games);
     lastRecords = game.records.slice();
-    renderResult();
-    show("result");
+    setTimeout(() => {
+      renderResult();
+      show("result");
+    }, END_DELAY_MS);
   }
 
   function record(mole, result, rt) {
@@ -457,7 +461,7 @@ console.log(
     }
     hud();
     record(mole, "正解", rt);
-    playFeedback(true, mole.speaker, mole.kind === "silent");
+    playFeedback(true, mole.speaker);
   }
 
   function applyMiss(mole, result, rt) {
@@ -465,7 +469,7 @@ console.log(
     game.combo = 0;
     hud();
     record(mole, result, rt);
-    playFeedback(false, mole.speaker, mole.kind === "silent");
+    playFeedback(false, mole.speaker);
   }
 
   function removeMole(mole) {
@@ -575,7 +579,7 @@ console.log(
     }
     let speaker;
     if (kind === "silent") {
-      speaker = 0;
+      speaker = SILENT_SPEAKER;
     } else if (game.spawned < 10) {
       speaker = game.speaker0;
     } else if (game.spawned < 20) {
@@ -619,11 +623,8 @@ console.log(
       ...WORD_R,
       ...SENTENCE_L,
       ...SENTENCE_R,
-      SILENT_FILE,
       ...SFX_V,
-      ...SFX_B,
-      SFX_V_SILENT,
-      SFX_B_SILENT
+      ...SFX_B
     ];
 
     const results = await Promise.all(files.map(src => checkAudioFile(src)));
@@ -679,7 +680,10 @@ console.log(
     holes.forEach((h) => { h.className = "hole"; });
     hud();
     show("play");
-    spawn();
+    setTimeout(() => {
+      if (!game || game.ended) return;
+      spawn();
+    }, START_DELAY_MS);
   }
 
   function pct(n, d) {
@@ -812,6 +816,15 @@ console.log(
     }
   });
   updateLogCount();
+
+// 生徒版では管理用UIを非表示
+  if (STUDENT_MODE) {
+    el("dlAll").style.display = "none";
+    el("clearLogs").style.display = "none";
+    el("showLogs").style.display = "none";
+    el("logCount").style.display = "none";
+  }
+
 })();
 </script>
 </body>
