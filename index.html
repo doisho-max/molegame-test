@@ -147,14 +147,14 @@
 
 <script>
 (function () {
-  const STUDENT_MODE = true;			// 生徒用モード。履歴の確認、CSVダウンロードなどのボタンを隠すためのもの.
+  const STUDENT_MODE = true			// 生徒用モード。履歴の確認、CSVダウンロードなどのボタンを隠すためのもの.
   const START_DELAY_MS = 700;			// ゲーム画面に遷移後、ゲームが始まるまでの時間.
   const END_DELAY_MS = 500;			// ゲームが終了後、結果画面に遷移するまでの時間.
   const SILENT_SPEAKER = 3;			// 無音のモグラの時に割り当てられる話者のインデックス番号（Oから始まる）.
-  const INITIAL_LIFE = 5;
-  const MAX_LIFE = 5;
+  const INITIAL_LIFE = 10;
+  const MAX_LIFE = 10;
   const MOLES_PER_STAGE = 30;
-  const COMBO_LIFE_EVERY = 5;
+  const COMBO_LIFE_EVERY = 3;
   const POST_AUDIO_LINGER_RATIO = 3.0;	// 音声再生後にモグラが画面に残る時間.
   const MAX_LINGER_MS = 3000;			// 音声再生後にモグラが画面にこのる時間の上限.
   const MIN_STIMULUS_RATE = 0.8;		// 音声を減速させる係数の最小値.
