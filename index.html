@@ -766,10 +766,21 @@ console.log(
     const taps = rec.filter((r) => r.result === "正解" && r.rt != null);
     const avg = taps.length ? Math.round(taps.reduce((a, r) => a + r.rt, 0) / taps.length) : null;
     el("rRt").textContent = avg == null ? "（タップ成功なし）" : avg + " ms";
+
+    // 星判定.
+    const total = rec.length;
+    const correct = rec.filter(r => r.result === "正解").length;
+    const accuracy = total ? correct / total : 0;
     let stars = 1;
     let label = "星1";
-    if (avg != null && avg <= 1000) { stars = 3; label = "星3（マスター）"; }
-    else if (avg != null && avg <= 1300) { stars = 2; label = "星2"; }
+    if (accuracy >= 0.90) {
+      stars = 3;
+      label = "星3（マスター）";
+    }
+    else if (accuracy >= 0.75) {
+      stars = 2;
+      label = "星2";
+    }
     el("stars").innerHTML = [1, 2, 3].map((n) => '<div class="star' + (n <= stars ? " fill" : "") + '"></div>').join("");
     el("starLabel").textContent = label;
   }
