@@ -3,78 +3,233 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>L/R Mole</title>
+<title>音モグラたたきゲーム</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: sans-serif;
-    background: #d0d0d0;
-    color: #444;
-    min-height: 100vh;
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+body{
+  font-family:sans-serif;
+  background:#d0d0d0;
+  color:#444;
+  min-height:100vh;
+}
+button,
+input{
+  font:inherit;
+  color:#444;
+  background:#bdbdbd;
+  border:0;
+}
+button{
+  cursor:pointer;
+  padding:12px 16px;
+}
+button:hover{
+  background:#a8a8a8;
+}
+button.on{
+  background:#8a8a8a;
+  color:#222;
+}
+input[type="text"]{
+  padding:10px;
+  width:240px;
+  max-width:100%;
+}
+.screen{
+  display:none;
+  min-height:100vh;
+  padding:24px;
+}
+.screen.show{
+  display:block;
+}
+h1{
+  font-size:20px;
+  font-weight:700;
+  margin-bottom:16px;
+}
+p,
+li{
+  font-size:14px;
+  line-height:1.5;
+}
+ul{
+  margin:12px 0 20px 20px;
+}
+.row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:12px 0;
+}
+/* =========================
+   PLAY SCREEN
+   ========================= */
+#play{
+  padding:0;
+}
+/* 1536:864 = 16:9 */
+#gameArea{
+  position:relative;
+  width:min(100vw,1536px);
+  aspect-ratio:16 / 9;
+  margin:auto;
+  overflow:hidden;
+}
+/* 背景 */
+.bg-far,
+.bg-near{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+.bg-far{
+  z-index:1;
+}
+/* 前景 */
+.bg-near{
+  z-index:20;
+  pointer-events:none;
+}
+/* HUD */
+.hud{
+  position:absolute;
+  top:12px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:24px;
+  z-index:100;
+}
+.hud div{
+  background:rgba(255,255,255,.75);
+  padding:12px 20px;
+  min-width:100px;
+  text-align:center;
+  border-radius:10px;
+}
+/* =========================
+   MOLE SLOTS
+   ========================= */
+.hole,
+.rim{
+  position:absolute;
+  width:16.67%;
+  aspect-ratio:1;
+  transform:translate(-50%,-50%);
+}
+/* モグラスロット */
+.hole{
+  z-index:10;
+  cursor:pointer;
+}
+/* 背景座標系 */
+.slot0{
+  left:25%;
+  top:85.19%;
+}
+.slot1{
+  left:41.67%;
+  top:85.19%;
+}
+.slot2{
+  left:58.33%;
+  top:85.19%;
+}
+.slot3{
+  left:75%;
+  top:85.19%;
+}
+/* モグラ画像 */
+.mole{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:1;
+  transform:translateY(0%);
+  transition:transform 0.18s ease;
+}
+/* 盛り土画像 */
+.rim{
+  z-index:30;
+  pointer-events:none;
+}
+/* 出現 */
+.hole.up .mole{
+  transform:translateY(-62.5%);
+}
+/* ミス時 */
+  @keyframes badBob {
+    0% {
+      transform: translateY(-62.5%);
+    }
+    50% {
+      transform: translateY(-68.75%);
+    }
+    100% {
+      transform: translateY(-62.5%);
+    }
   }
-  button, input {
-    font: inherit;
-    color: #444;
-    background: #bdbdbd;
-    border: 0;
-    border-radius: 0;
+  .hole.bad .mole{
+    animation: badBob 0.30s ease;
+    filter:
+      saturate(180%)
+      hue-rotate(-20deg);
   }
-  button { cursor: pointer; padding: 12px 16px; }
-  button:hover { background: #a8a8a8; }
-  button.on { background: #8a8a8a; color: #222; }
-  input[type="text"] { padding: 10px; width: 240px; max-width: 100%; }
-  .screen { display: none; min-height: 100vh; padding: 24px; }
-  .screen.show { display: block; }
-  h1 { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
-  p, li { font-size: 14px; line-height: 1.5; }
-  ul { margin: 12px 0 20px 20px; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
-  .hud {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    margin-bottom: 48px;
-  }
-  .hud div {
-    background: #c4c4c4;
-    padding: 12px 20px;
-    min-width: 100px;
-    text-align: center;
-  }
-  .holes {
-    display: flex;
-    justify-content: center;
-    gap: 28px;
-    margin-top: 40px;
-  }
-  .hole {
-    width: 88px;
-    height: 88px;
-    border-radius: 50%;
-    background: #9a9a9a;
-  }
-  .hole.up { background: #c8c800; }
-  .hole.bad { background: #b44; }
-  .stats { margin: 16px 0; }
-  .stats p { margin: 6px 0; }
-  .stars { display: flex; gap: 10px; margin: 12px 0 20px; }
-  .star {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #cfcfcf;
-  }
-  .star.fill {
-    background: #ffd700;
-  }
+
+/* =========================
+   RESULT
+   ========================= */
+.stats{
+  margin:16px 0;
+}
+.stats p{
+  margin:6px 0;
+}
+.stars{
+  display:flex;
+  gap:10px;
+  margin:12px 0 20px;
+}
+.star{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#cfcfcf;
+}
+.star.fill{
+  background:#ffd700;
+}
 </style>
 </head>
 <body>
-<div id="title" class="screen show">
-  <h1>モグラたたきゲーム：英語 L/R 知覚訓練（試験版）</h1>
+
+<div id="setSelect" class="screen show">
+  <h1>モグラたたきゲーム：英語の音の違いを聞き取ろう！（試験版）</h1>
   <p id="username-label">ユーザー名（任意）</p>
   <p style="margin:8px 0 16px"><input id="name" type="text" maxlength="40" placeholder="nickname"></p>
-  <p>モード</p>
+  <p>聞き分ける音を選ぶ</p>
+  <div class="row">
+    <button id="setLR" type="button">
+      LとR
+    </button>
+    <button id="setFlFr" type="button">
+      FlとFr
+    </button>
+  </div>
+  <p>まずはLとRの聞き分けから始めるのがおすすめ！（今はそれだけしか選択できません）</p>
+</div>
+
+<div id="modeSelect" class="screen" hidden>
+  <h1>モード選択</h1>
+  <p id="currentSetLabel"></p>
   <div class="row">
     <button id="modeWord" class="on" type="button">単語モード</button>
     <button id="modeSentence" type="button">英文モード</button>
@@ -87,6 +242,7 @@
   </ul>
 <div class="row">
   <button id="start" type="button">ゲームスタート</button>
+  <button id="backToSet" type="button">音の選択へ戻る</button>
   <button id="showLogs" type="button">プレイ履歴</button>
   <button id="dlAll" type="button">全ゲームログをダウンロード（CSV）</button>
   <button id="clearLogs" type="button">ログを全削除</button>
@@ -95,16 +251,38 @@
 </div>
 
 <div id="play" class="screen" hidden>
-  <div class="hud">
-    <div>ライフ<br><span id="life">5</span></div>
-    <div>コンボ<br><span id="combo">0</span></div>
-    <div>スコア<br><span id="score">0</span></div>
-  </div>
-  <div class="holes">
-    <div class="hole" data-i="0"></div>
-    <div class="hole" data-i="1"></div>
-    <div class="hole" data-i="2"></div>
-    <div class="hole" data-i="3"></div>
+  <div id="gameArea">
+    <!-- 背景 -->
+    <img class="bg-far" src="image/background_1.png">
+    <!-- HUD -->
+    <div class="hud">
+      <div>ライフ<br><span id="life">5</span></div>
+      <div>コンボ<br><span id="combo">0</span></div>
+      <div>スコア<br><span id="score">0</span></div>
+    </div>
+    <!-- モグラスロット -->
+    <div class="hole slot0" data-i="0">
+      <img class="mole" src="image/mole.png">
+    </div>
+    <img class="rim slot0" src="image/hole.png">
+
+    <div class="hole slot1" data-i="1">
+      <img class="mole" src="image/mole.png">
+    </div>
+    <img class="rim slot1" src="image/hole.png">
+
+    <div class="hole slot2" data-i="2">
+      <img class="mole" src="image/mole.png">
+    </div>
+    <img class="rim slot2" src="image/hole.png">
+
+    <div class="hole slot3" data-i="3">
+      <img class="mole" src="image/mole.png">
+    </div>
+    <img class="rim slot3" src="image/hole.png">
+
+    <!-- 前景 -->
+    <img class="bg-near" src="image/foreground_1.png">
   </div>
 </div>
 
@@ -121,6 +299,7 @@
   <p id="starLabel" style="margin-bottom:16px"></p>
 <div class="row">
   <button id="again" type="button">もう一度プレイ</button>
+  <button id="changeSet" type="button">音を変更</button>
   <button id="showPlayLog" type="button">今回のプレイログを見る</button>
 </div>
 </div>
@@ -147,6 +326,7 @@
 
 <script>
 (function () {
+  const CHALLENGE_EVERY = 3;			// チャレンジの発生頻度.
   const STUDENT_MODE = true;			// 生徒用モード。履歴の確認、CSVダウンロードなどのボタンを隠すためのもの.
   const START_DELAY_MS = 700;			// ゲーム画面に遷移後、ゲームが始まるまでの時間.
   const END_DELAY_MS = 500;			// ゲームが終了後、結果画面に遷移するまでの時間.
@@ -170,16 +350,11 @@
   const STORAGE_KEY = "lrMoleGames_v1";
   const KEYS = ["f", "g", "h", "j"];
 
-  const WORD_L = ["./sound/light_01.mp3","./sound/light_02.mp3","./sound/light_03.mp3","./sound/light_04.mp3","./sound/light_05.mp3","./sound/light_06.mp3","./sound/light_07.mp3","./sound/light_08.mp3","./sound/light_09.mp3","./sound/light_10.mp3"];
-  const WORD_R = ["./sound/right_01.mp3","./sound/right_02.mp3","./sound/right_03.mp3","./sound/right_04.mp3","./sound/right_05.mp3","./sound/right_06.mp3","./sound/right_07.mp3","./sound/right_08.mp3","./sound/right_09.mp3","./sound/right_10.mp3"];
-  const SENTENCE_L = ["./sound/I_led_it_01.mp3","./sound/I_led_it_02.mp3","./sound/I_led_it_03.mp3","./sound/I_led_it_04.mp3","./sound/I_led_it_05.mp3","./sound/I_led_it_06.mp3","./sound/I_led_it_07.mp3","./sound/I_led_it_08.mp3","./sound/I_led_it_09.mp3","./sound/I_led_it_10.mp3"];
-  const SENTENCE_R = ["./sound/I_read_it_01.mp3","./sound/I_read_it_02.mp3","./sound/I_read_it_03.mp3","./sound/I_read_it_04.mp3","./sound/I_read_it_05.mp3","./sound/I_read_it_06.mp3","./sound/I_read_it_07.mp3","./sound/I_read_it_08.mp3","./sound/I_read_it_09.mp3","./sound/I_read_it_10.mp3"];
-  const SFX_V = ["./sound/voo_01.mp3","./sound/voo_02.mp3","./sound/voo_03.mp3","./sound/voo_04.mp3","./sound/voo_05.mp3","./sound/voo_06.mp3","./sound/voo_07.mp3","./sound/voo_08.mp3","./sound/voo_09.mp3","./sound/voo_10.mp3"];
-  const SFX_B = ["./sound/boo_01.mp3","./sound/boo_02.mp3","./sound/boo_03.mp3","./sound/boo_04.mp3","./sound/boo_05.mp3","./sound/boo_06.mp3","./sound/boo_07.mp3","./sound/boo_08.mp3","./sound/boo_09.mp3","./sound/boo_10.mp3"];
-
   const el = (id) => document.getElementById(id);
   const holes = [...document.querySelectorAll(".hole")];
-  let mode = "word";
+
+  let currentSet = "LR";
+  let currentMode = "word";
   let ctx = null;
   let game = null;
   let lastRecords = [];
@@ -187,7 +362,14 @@
   let audioVerified = false;
 
 function show(id) {
-    ["title", "play", "result", "history", "playLog"].forEach((s) => {
+    [
+  "setSelect",
+  "modeSelect",
+  "play",
+  "result",
+  "history",
+  "playLog"
+].forEach((s) => {
       const on = s === id;
       el(s).classList.toggle("show", on);
       el(s).hidden = !on;
@@ -200,8 +382,8 @@ function show(id) {
 
   function pickType() {
     const r = Math.random();
-    if (r < 0.4) return "L";
-    if (r < 0.8) return "R";
+    if (r < 0.4) return "A";
+    if (r < 0.8) return "B";
     return "silent";
 }
   function speedAt(i) {
@@ -210,9 +392,9 @@ function show(id) {
     const wave = 1 + 0.38 * Math.sin(p * Math.PI * 4);
     return trend * wave;
   }
-  function filesFor(kind) {
-    if (mode === "word") return kind === "L" ? WORD_L : WORD_R;
-    return kind === "L" ? SENTENCE_L : SENTENCE_R;
+
+  function speakerFile(prefix, speaker) {
+    return `${gameBasePath()}/${prefix}_${String(speaker + 1).padStart(2, "0")}.mp3`;
   }
 
   function ensureAudio() {
@@ -242,8 +424,8 @@ function show(id) {
     const t = ac.currentTime;
     const d = durMs / 1000;
     const base = 160 + speaker * 18;
-    const f1 = kind === "L" ? base * 2.4 : base * 1.35;
-    const f2 = kind === "L" ? base * 5.5 : base * 3.1;
+    const f1 = kind === "A" ? base * 2.4 : base * 1.35;
+    const f2 = kind === "A" ? base * 5.5 : base * 3.1;
     [f1, f2].forEach((f, i) => {
       const o = ac.createOscillator();
       const g = ac.createGain();
@@ -315,15 +497,14 @@ console.log(
   async function playStimulus(kind, speaker, rate) {
     const dur = BASE_AUDIO_MS / rate;
     if (kind === "silent") {
-      const src = mode === "word" ? WORD_L[speaker] : SENTENCE_L[speaker];
+      const src = speakerFile("A", speaker);
       const r = await playFile(src, rate, 0, MIN_STIMULUS_RATE, MAX_STIMULUS_RATE);
       return {
         ms: r.usedFile ? r.ms : dur,
         speakerId: src
       };
     }
-    const list = filesFor(kind);
-    const src = list[speaker];
+    const src = speakerFile(kind, speaker);
     const r = await playFile(src, rate, 1.0, MIN_STIMULUS_RATE, MAX_STIMULUS_RATE);
     if (!r.usedFile) {
       console.warn("[Missing Audio]", src);
@@ -333,12 +514,17 @@ console.log(
   }
 
   async function playFeedback(ok, speaker) {
-    const src = ok ? SFX_V[speaker] : SFX_B[speaker];
+    const src = speakerFile(ok ? "SU" : "FA", speaker);
     const r = await playFile(src, 1 / SFX_DURATION_RATIO, SFX_VOLUME_RATIO, MIN_SFX_RATE, MAX_SFX_RATE);
     if (!r.usedFile) {
       console.warn("[Missing Audio]", src);
       synthSfx(ok, speaker);
     }
+  }
+
+  function gameBasePath() {
+    const level = game.challenge ? "challenge" : "normal";
+    return `./soundsets/${game.set}/${game.mode}/${level}`;
   }
 
   function loadGames() {
@@ -410,11 +596,19 @@ console.log(
   }
 
   function setHole(i, cls) {
-    holes[i].className = "hole" + (cls ? " " + cls : "");
-  }
+    holes[i].className = "hole slot" + i + (cls ? " " + cls : "");
+ }
 
   function occupy() {
     return game.moles.map((m) => m.hole);
+  }
+
+  function shouldChallenge() {
+    const count = loadGames().filter(g =>
+      g.set === currentSet &&
+      g.mode === currentMode
+    ).length;
+    return ((count + 1) % CHALLENGE_EVERY) === 0;
   }
 
   function finishIfNeeded() {
@@ -431,7 +625,7 @@ console.log(
     });
     game.moles = [];
     const games = loadGames();
-    games.push({ at: new Date().toISOString(), score: game.score, records: game.records.slice() });
+    games.push({ at: new Date().toISOString(), set: game.set, mode: game.mode, challenge: game.challenge, score: game.score, records: game.records.slice() });
     saveGames(games);
     lastRecords = game.records.slice();
     setTimeout(() => {
@@ -441,11 +635,22 @@ console.log(
   }
 
   function record(mole, result, rt) {
-    const stim = mole.kind === "silent" ? "無音" : mole.kind;
+    let stim;
+    if (mole.kind === "A") {
+      stim = "L";
+    }
+    else if (mole.kind === "B") {
+      stim = "R";
+    }
+    else {
+      stim = "無音";
+    }
     game.records.push({
       user: game.user,
       time: mole.time,
-      mode: mode === "word" ? "単語" : "英文",
+      set: game.set,
+      mode: game.mode === "word" ? "単語" : "英文",
+      challenge: game.challenge,
       stim,
       speakerId: mole.speakerId,
       result,
@@ -515,7 +720,7 @@ console.log(
  */
   function onTimeout(mole) {
     if (mole.done) return;
-    const shouldTap = mole.kind !== "R";
+    const shouldTap = mole.kind !== "B";
     if (shouldTap) {
       applyMiss(mole, "見落とし", null);
       retract(mole, true);
@@ -539,7 +744,7 @@ console.log(
       return;
     }
     const rt = Math.round(performance.now() - mole.t0);
-    const shouldTap = mole.kind !== "R";
+    const shouldTap = mole.kind !== "B";
     if (shouldTap) {
       applyCorrect(mole, rt);
       retract(mole, false);
@@ -573,7 +778,7 @@ console.log(
     //最初の２匹をLかRにする。
     let kind;
     if (game.spawned < 2) {
-      kind = Math.random() < 0.5 ? "L" : "R";
+      kind = Math.random() < 0.5 ? "A" : "B";
     } else {
       kind = pickType();
     }
@@ -617,6 +822,10 @@ console.log(
     });
   }
 
+// verifyAudioAssets()は後で作り直す。今は何もしない関数にしておく.
+  async function verifyAudioAssets() {}
+
+/*
   async function verifyAudioAssets() {
     const files = [
       ...WORD_L,
@@ -648,6 +857,8 @@ console.log(
       );
     }
   }
+*/
+
 
 /**
  * 新しいゲームを開始する
@@ -665,6 +876,9 @@ console.log(
   }
     ensureAudio();
     game = {
+      set: currentSet,
+      mode: currentMode,
+      challenge: shouldChallenge(),
       user: el("name").value.trim(),
       life: INITIAL_LIFE,
       combo: 0,
@@ -677,7 +891,7 @@ console.log(
       spawning: false,
       nextTimer: null
     };
-    holes.forEach((h) => { h.className = "hole"; });
+    holes.forEach((h, i) => { h.className = "hole slot" + i; });
     hud();
     show("play");
     setTimeout(() => {
@@ -703,7 +917,7 @@ console.log(
       const ok = sub.filter(r => r.result === "正解").length;
       return Math.round(ok / sub.length * 100);
     };
-    return {score, avgRt, l: rate("L"), r: rate("R"), s: rate("無音")
+    return {score, avgRt, a: rate("L"), b: rate("R"), s: rate("無音")
     };
   }
 
@@ -742,9 +956,9 @@ console.log(
           <p>スコア:
              ${stat.score}</p>
           <p>L:
-             ${stat.l}%</p>
+             ${stat.a}%</p>
           <p>R:
-             ${stat.r}%</p>
+             ${stat.b}%</p>
           <p>無音:
              ${stat.s}%</p>
           <p>平均反応:
@@ -786,17 +1000,19 @@ console.log(
   }
 
   el("modeWord").onclick = () => {
-    mode = "word";
+    currentMode = "word";
     el("modeWord").classList.add("on");
     el("modeSentence").classList.remove("on");
   };
   el("modeSentence").onclick = () => {
-    mode = "sentence";
+    currentMode = "sentence";
     el("modeSentence").classList.add("on");
     el("modeWord").classList.remove("on");
   };
   el("start").onclick = startGame;
-  el("again").onclick = () => show("title");
+  el("again").onclick = () => {show("modeSelect");};
+  el("backToSet").onclick = () => {show("setSelect");};
+  el("changeSet").onclick = () => {show("setSelect");};
   el("dlAll").onclick = () => {
     const rows = loadGames().flatMap((g) => g.records || []);
     downloadCsv("all-game-logs.csv", rows);
@@ -805,7 +1021,7 @@ console.log(
     renderHistory();
     show("history");
   };
-  el("historyBack").onclick = () => show("title");
+  el("historyBack").onclick = () => show("setSelect");
   el("clearLogs").onclick = () => {
     const ok = confirm("保存済みログをすべて削除しますか？");
     if (!ok) return;
@@ -819,6 +1035,17 @@ console.log(
   holes.forEach((h) => {
     h.addEventListener("click", () => hit(Number(h.dataset.i)));
   });
+  el("setLR").onclick = () => {
+    currentSet = "LR";
+    el("currentSetLabel").textContent = "音: L/R";
+    show("modeSelect");
+    };
+  el("setFlFr").onclick = () => {
+    currentSet = "FlFr";
+    el("currentSetLabel").textContent = "音: Fl/Fr";
+    show("modeSelect");
+    };
+
   document.addEventListener("keydown", (e) => {
     const i = KEYS.indexOf(e.key.toLowerCase());
     if (i >= 0 && el("play").classList.contains("show")) {
@@ -836,6 +1063,7 @@ console.log(
     el("clearLogs").style.display = "none";
     el("showLogs").style.display = "none";
     el("logCount").style.display = "none";
+    el("setFlFr").style.display = "none";
   }
 
 })();
