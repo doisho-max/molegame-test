@@ -333,6 +333,8 @@ ul{
 
 <script>
 (function () {
+  const APP_VERSION = "1.00";			// 将来的にversonがアップしたときのお知らせに使う.
+  const SOUNDSET_FOLDER = "soundsets";		// 音声フォルダの名前。なかのファイルをアップデートしたときにcacheされたものが使われないように、名前を"soundsets_v1_00"などに変更する.
   const CHALLENGE_EVERY = 30;			// チャレンジの発生頻度.
   const STUDENT_MODE = true;			// 生徒用モード。履歴の確認、CSVダウンロードなどのボタンを隠すためのもの.
   const START_DELAY_MS = 700;			// ゲーム画面に遷移後、ゲームが始まるまでの時間.
@@ -434,7 +436,6 @@ function show(id) {
       a.mozPreservesPitch = true;
       a.webkitPreservesPitch = true;
       const actualRate = Math.max(minRate, Math.min(maxRate, rate));
-
 //for debug
 console.log(
   "[Rate]",
@@ -445,7 +446,6 @@ console.log(
   actualRate
 );
 //
-
       a.playbackRate = actualRate;
       const t = setTimeout(() => finish(0, false), 1000);
       a.addEventListener("error", () => { clearTimeout(t); finish(0, false); });
@@ -493,7 +493,7 @@ console.log(
 
   function gameBasePath() {
     const level = game.challenge ? "challenge" : "normal";
-    return `./soundsets/${game.set}/${game.mode}/${level}`;
+    return `./${SOUNDSET_FOLDER}/${game.set}/${game.mode}/${level}`;
   }
 
   function loadGames() {
@@ -684,7 +684,7 @@ console.log(
  * 押すべきモグラを押さなかった:
  *   見落とし
  *
- * Rを正しくスルー:
+ * Bを正しくスルー:
  *   正解
  */
   function onTimeout(mole) {
@@ -702,9 +702,9 @@ console.log(
 /**
  * プレイヤーが穴を叩いた時の処理
  *
- * L      → 叩く
+ * A      → 叩く
  * silent → 叩く
- * R      → 見送る
+ * B      → 見送る
  */
   function hit(hole) {
     if (!game || game.ended) return;
@@ -744,7 +744,7 @@ console.log(
     const used = occupy();
     const free = [0, 1, 2, 3].filter((i) => !used.includes(i));
     const hole = (free.length ? free : [0, 1, 2, 3])[rand(free.length || 4)];
-    //最初の２匹をLかRにする。
+    //最初の２匹をsilentではないようにする。
     let kind;
     if (game.spawned < 2) {
       kind = Math.random() < 0.5 ? "A" : "B";
@@ -809,7 +809,7 @@ console.log(
   async function preloadAudioAssets() {
     const files = [];
     const level = shouldChallenge() ? "challenge" : "normal";
-    const base = `./soundsets/${currentSet}/${currentMode}/${level}`;
+    const base = `./${SOUNDSET_FOLDER}/${currentSet}/${currentMode}/${level}`;
     for(let s = 1; s <= 10; s++) {
       const n = String(s).padStart(2, "0");
       files.push(`${base}/A_${n}.mp3`);
