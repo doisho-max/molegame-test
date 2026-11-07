@@ -192,6 +192,60 @@ ul{
   }
 
 /* =========================
+   OVERLAY
+   ========================= */
+#overlay{
+  position:absolute;
+  inset:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,0,.45);
+  z-index:300;
+}
+#overlay.hidden{
+  display:none;
+}
+.overlay-panel{
+  width:min(90%,480px);
+  max-height:90%;
+  overflow:auto;
+  padding:24px;
+  border-radius:24px;
+  background:rgba(255,255,255,.92);
+  color:#333;
+  text-align:center;
+}
+.overlay-title{
+  font-size:28px;
+  font-weight:700;
+  margin-bottom:12px;
+  color:#c99600;
+}
+.overlay-body{
+  font-size:16px;
+  line-height:1.7;
+}
+.overlay-body h3{
+  margin-bottom:10px;
+}
+.overlay-body hr{
+  margin:12px 0;
+  border:none;
+  border-top:1px solid #cccccc;
+}
+#overlayStart{
+  margin-top:16px;
+  min-width:180px;
+  padding:14px 24px;
+  border:none;
+  border-radius:999px;
+  background:#f4d35e;
+  color:#4a3b00;
+  font-weight:700;
+}
+
+/* =========================
    RESULT
    ========================= */
 .stats{
@@ -219,36 +273,29 @@ ul{
 <body>
 
 <div id="setSelect" class="screen show">
-  <h1>音モグラたたきゲーム：英語の音の違いを聞き取ろう！（試験版）</h1>
+  <h1>音モグラたたきゲーム：英語の音の違いを聞き取ろう！（テスト版）</h1>
   <p id="username-label">ユーザー名（任意）</p>
   <p style="margin:8px 0 16px"><input id="name" type="text" maxlength="40" placeholder="nickname"></p>
   <p>聞き分ける音を選ぶ</p>
   <div class="row">
     <button id="setLR" type="button">
-      LとR
+      LとR（難易度★★★★☆）
     </button>
     <button id="setFlFr" type="button">
-      FlとFr
+      FlとFr（難易度★★★★★）
     </button>
   </div>
-  <p>まずはLとRの聞き分けから始めるのがおすすめ！（今はそれだけしか選択できません）</p>
+  <p>まずはLとRの聞き分けから始めるのがおすすめ！</p>
 </div>
 
 <div id="modeSelect" class="screen" hidden>
   <h1>モード選択</h1>
   <p id="currentSetLabel"></p>
   <div class="row">
-    <button id="modeWord" class="on" type="button">単語モード</button>
+    <button id="modeWord" type="button">単語モード</button>
     <button id="modeSentence" type="button">英文モード</button>
   </div>
-  <ul>
-    <li>「L」の音を発するモグラと無音のモグラをタップする。</li>
-    <li>「R」の音を発するモグラはタップせず見送る。</li>
-    <li>穴は左から F / G / H / J キー、またはクリック。</li>
-    <li>モグラをタップしたときの効果音（voo, boo）に気を取られないように。</li>
-  </ul>
 <div class="row">
-  <button id="start" type="button">ゲームスタート</button>
   <button id="backToSet" type="button">音の選択へ戻る</button>
   <button id="showLogs" type="button">プレイ履歴</button>
   <button id="dlAll" type="button">全ゲームログをダウンロード（CSV）</button>
@@ -290,6 +337,42 @@ ul{
 
     <!-- 前景 -->
     <img class="bg-near" src="image/foreground_1.png">
+
+    <!-- Overlay -->
+    <div id="overlay" class="hidden">
+      <div class="overlay-panel">
+        <div class="overlay-title" id="overlayTitle">
+          MISSION 1
+        </div>
+        <div class="overlay-body" id="overlayBody">
+          <h3>
+            L と R を聞き分けよう
+          </h3>
+          <hr>
+          <p><strong>モグラをタップする</strong></p>
+          <p>
+            ・「light」と言うモグラ<br>
+            ・何も言わないモグラ
+          </p>
+          <hr>
+          <p><strong>見送る</strong></p>
+          <p>
+            ・「right」と言うモグラ
+          </p>
+          <hr>
+          <p><strong>ヒント</strong></p>
+          <p>
+            モグラの鳴き声に<br>
+            気を取られないように！
+          </p>
+          <hr>
+          <p>
+            [F] [G] [H] [J]
+          </p>
+          <button id="overlayStart" type="button">Start</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -333,16 +416,13 @@ ul{
 
 <script>
 (function () {
-  const APP_VERSION = "1.00";			// 将来的にversonがアップしたときのお知らせに使う.
+  const APP_VERSION = "1.00";			// 将来的にversionがアップしたときのお知らせに使う.
   const SOUNDSET_FOLDER = "soundsets";		// 音声フォルダの名前。なかのファイルをアップデートしたときにcacheされたものが使われないように、名前を"soundsets_v1_00"などに変更する.
-  const CHALLENGE_EVERY = 30;			// チャレンジの発生頻度.
+  const CHALLENGE_EVERY = 1000;			// チャレンジの発生頻度.
   const STUDENT_MODE = true;			// 生徒用モード。履歴の確認、CSVダウンロードなどのボタンを隠すためのもの.
   const START_DELAY_MS = 700;			// ゲーム画面に遷移後、ゲームが始まるまでの時間.
   const END_DELAY_MS = 500;			// ゲームが終了後、結果画面に遷移するまでの時間.
-  const SILENT_SPEAKER = 3;			// 無音のモグラの時に割り当てられる話者のインデックス番号（Oから始まる）.
-  const INITIAL_LIFE = 10;
   const MAX_LIFE = 10;
-  const MOLES_PER_STAGE = 30;
   const COMBO_LIFE_EVERY = 3;
   const POST_AUDIO_LINGER_RATIO = 3.0;	// 音声再生後にモグラが画面に残る時間.
   const MAX_LINGER_MS = 3000;			// 音声再生後にモグラが画面にこのる時間の上限.
@@ -358,6 +438,31 @@ ul{
   const RESPAWN_DELAY_MS = 80;		// 次のモグラが現れるまでの待ち時間.
   const STORAGE_KEY = "lrMoleGames_v1";
   const KEYS = ["f", "g", "h", "j"];
+  const STAGES = [
+    {
+      id: 1,
+      speakers: 1,
+      moleCount: 30,
+      life: 10
+    },
+    {
+      id: 2,
+      speakers: 2,
+      moleCount: 30,
+      life: 10
+    },
+    {
+      id: 3,
+      speakers: 10,
+      moleCount: 30,
+      life: 10
+    }
+  ];
+  const CHALLENGE_STAGE = {
+    speakers: 10,
+    moleCount: 30,
+    life: 10
+  };
 
   const el = (id) => document.getElementById(id);
   const holes = [...document.querySelectorAll(".hole")];
@@ -385,6 +490,293 @@ function show(id) {
     });
   }
 
+function currentStage() {
+  if(game.challenge){
+    return CHALLENGE_STAGE;
+  }
+  return STAGES[game.stageId - 1];
+}
+
+function updateMissionOverlay() {
+  el("overlayTitle").textContent = `MISSION 1 - STAGE ${game.stageId}`;
+  if(currentMode === "word") {
+    el("overlayBody").innerHTML = `
+      <h3>
+        L と R を聞き分けよう
+      </h3>
+      <hr>
+      <p><strong>タップする</strong></p>
+      <p>
+        ・「light」と言うモグラ<br>
+        ・何も言わないモグラ
+      </p>
+      <hr>
+      <p><strong>見送る</strong></p>
+      <p>
+        ・「right」と言うモグラ
+      </p>
+      <hr>
+      <p><strong>ヒント</strong></p>
+      <p>
+        モグラの鳴き声に<br>
+        気を取られないように！
+      </p>
+      <hr>
+      <p>
+        [F] [G] [H] [J]
+      </p>
+      <button id="overlayStart" type="button">
+        Start
+      </button>
+    `;
+  } else {
+
+    el("overlayBody").innerHTML = `
+      <h3>
+        L と R を聞き分けよう
+      </h3>
+      <hr>
+      <p><strong>モグラをタップする</strong></p>
+      <p>
+        ・「I led it.」と言うモグラ<br>
+        ・何も言わないモグラ
+      </p>
+      <hr>
+      <p><strong>見送る</strong></p>
+      <p>
+        ・「I read it.（過去形）」と言うモグラ
+      </p>
+      <hr>
+      <p><strong>ヒント</strong></p>
+      <p>
+        モグラの鳴き声に<br>
+        気を取られないように！
+      </p>
+      <hr>
+      <p>
+        [F] [G] [H] [J]
+      </p>
+      <button id="overlayStart" type="button">
+        Start
+      </button>
+    `;
+  }
+  bindOverlayStart();
+}
+
+function showStageClear() {
+  const acc = accuracyFrom(game.stageRecords);
+  el("overlayTitle").textContent = "STAGE CLEAR";
+  el("overlayBody").innerHTML = `
+    <h3>
+      Stage ${game.stageId} Clear
+    </h3>
+    <hr>
+    <p>
+      成功率<br>${acc}%</p>
+    <p>
+      L：${statTextFrom(game.stageRecords,"L")}
+    </p>
+    <p>
+      R：${statTextFrom(game.stageRecords,"R")}
+    </p>
+    <p>
+      無音：${statTextFrom(game.stageRecords,"無音")}
+    </p>
+    <hr>
+    <button
+      id="continueBtn"
+      type="button">
+      Continue
+    </button>
+  `;
+  el("overlay").classList.remove("hidden");
+  el("continueBtn").onclick = () => {
+    if(game.stageId >= STAGES.length){
+      game.challenge = true;
+      showChallengeStart();
+      return;
+    }
+    game.stageId++;
+    game.life = currentStage().life;
+    game.stageRecords = [];
+    hud();
+    game.spawned = 0;
+    game.moles = [];
+    game.spawning = false;
+    game.ended = false;
+    updateMissionOverlay();
+    el("overlay").classList.remove("hidden");
+  };
+}
+
+function showMissionComplete() {
+  const results = game.stageResults;
+  const stage1 = results.find(r => r.stageId === 1);
+  const stage2 = results.find(r => r.stageId === 2);
+  const stage3 = results.find(r => r.stageId === 3);
+  const challenge = results.find(r => r.stageId === "challenge");
+  const rec = lastRecords;
+  const correct = rec.filter(r => r.result === "正解").length;
+  const accuracy = rec.length ? Math.round(correct * 100 / rec.length) : 0;
+  el("overlayTitle").textContent = "MISSION COMPLETE";
+  el("overlayBody").innerHTML = `
+    <h3>
+      「LとRの聞き分け」完了！
+    </h3>
+    <hr>
+    <p>
+      Stage 1<br>
+      ${stage1?.accuracy ?? "-"}%
+    </p>
+    <p>
+      Stage 2<br>
+      ${stage2?.accuracy ?? "-"}%
+    </p>
+    <p>
+      Stage 3<br>
+      ${stage3?.accuracy ?? "-"}%
+    </p>
+    <p>
+      Challenge<br>
+      ${challenge?.accuracy ?? "-"}%
+    </p>
+    <hr>
+    <p>
+      L：${statText("L")}
+    </p>
+    <p>
+      R：${statText("R")}
+    </p>
+    <p>
+      無音：${statText("無音")}
+    </p>
+    <hr>
+    <button id="resultBtn" type="button">
+      Result
+    </button>
+    <br><br>
+    <button id="homeBtn" type="button">
+      音選択へ戻る
+    </button>
+  `;
+  el("overlay").classList.remove("hidden");
+  el("resultBtn").onclick = () => {
+    el("overlay").classList.add("hidden");
+    renderResult();
+    show("result");
+  };
+  el("homeBtn").onclick = () => {
+    el("overlay").classList.add("hidden");
+    show("setSelect");
+  };
+}
+
+function showChallengeStart() {
+  el("overlayTitle").textContent = "CHALLENGE";
+  el("overlayBody").innerHTML = `
+    <h3>
+      最終試験
+    </h3>
+    <hr>
+    <p>
+      話者がすべて変わります。
+    </p>
+    <hr>
+    <button
+      id="challengeStartBtn"
+      type="button">
+      Start
+    </button>
+  `;
+  el("overlay").classList.remove("hidden");
+
+  el("challengeStartBtn").onclick = async () => {
+    const failed = await preloadAudioAssets("challenge");
+    if(failed.length){
+      alert(
+        "Challenge音声の読み込みに失敗しました"
+      );
+      return;
+    }
+    game.life = CHALLENGE_STAGE.life;
+    game.stageRecords = [];
+    game.spawned = 0;
+    game.moles = [];
+    game.spawning = false;
+    game.ended = false;
+    hud();
+    el("overlay").classList.add("hidden");
+    setTimeout(() => {
+      if(!game || game.ended)
+        return;
+      spawn();
+    }, START_DELAY_MS);
+  };
+}
+
+function showGameOver() {
+  const acc = accuracyFrom(game.stageRecords);
+  el("overlayTitle").textContent = "GAME OVER";
+  el("overlayBody").innerHTML = `
+    <p>
+      ライフがなくなりました
+    </p>
+    <hr>
+    <p>
+      成功率<br>${acc}%</p>
+    <p>
+      L：${statTextFrom(game.stageRecords,"L")}
+    </p>
+    <p>
+      R：${statTextFrom(game.stageRecords,"R")}
+    </p>
+    <p>
+      無音：${statTextFrom(game.stageRecords,"無音")}
+    </p>
+    <hr>
+    <button
+      id="retryBtn"
+      type="button">
+      もう一度プレイ
+    </button>
+    <br><br>
+    <button
+      id="homeBtn"
+      type="button">
+      音選択へ戻る
+    </button>
+  `;
+  el("overlay").classList.remove("hidden");
+  el("retryBtn").onclick = () => {
+    el("overlay").classList.add("hidden");
+    show("modeSelect");
+  };
+  el("homeBtn").onclick = () => {
+    el("overlay").classList.add("hidden");
+    show("setSelect");
+  };
+}
+
+function bindOverlayStart() {
+  el("overlayStart").onclick = async () => {
+    const failed = await preloadAudioAssets("normal");
+    if(failed.length){
+      alert(
+        "音声の読み込みに失敗しました"
+      );
+      return;
+    }
+    el("overlay")
+      .classList.add("hidden");
+    setTimeout(() => {
+      if(!game || game.ended)
+        return;
+      spawn();
+    }, START_DELAY_MS);
+  };
+}
+
   function rand(n) {
     return Math.floor(Math.random() * n);
   }
@@ -396,7 +788,7 @@ function show(id) {
     return "silent";
 }
   function speedAt(i) {
-    const p = i / Math.max(1, MOLES_PER_STAGE - 1);
+    const p = i / Math.max(1, currentStage().moleCount - 1);
     const trend = 1 + p * 0.7;
     const wave = 1 + 0.38 * Math.sin(p * Math.PI * 4);
     return trend * wave;
@@ -436,6 +828,7 @@ function show(id) {
       a.mozPreservesPitch = true;
       a.webkitPreservesPitch = true;
       const actualRate = Math.max(minRate, Math.min(maxRate, rate));
+
 //for debug
 console.log(
   "[Rate]",
@@ -446,6 +839,7 @@ console.log(
   actualRate
 );
 //
+
       a.playbackRate = actualRate;
       const t = setTimeout(() => finish(0, false), 1000);
       a.addEventListener("error", () => { clearTimeout(t); finish(0, false); });
@@ -468,10 +862,7 @@ console.log(
     if (kind === "silent") {
       const src = speakerFile("A", speaker);
       const r = await playFile(src, rate, 0, MIN_STIMULUS_RATE, MAX_STIMULUS_RATE);
-      return {
-        ms: r.usedFile ? r.ms : dur,
-        speakerId: src
-      };
+      return { ms: r.usedFile ? r.ms : dur, speakerId: src };
     }
     const src = speakerFile(kind, speaker);
     const r = await playFile(src, rate, 1.0, MIN_STIMULUS_RATE, MAX_STIMULUS_RATE);
@@ -487,7 +878,6 @@ console.log(
     const r = await playFile(src, 1 / SFX_DURATION_RATIO, SFX_VOLUME_RATIO, MIN_SFX_RATE, MAX_SFX_RATE);
     if (!r.usedFile) {
       console.warn("[Missing Audio]", src);
-      synthSfx(ok, speaker);
     }
   }
 
@@ -505,6 +895,27 @@ console.log(
       return [];
     }
   }
+
+function statText(stim) {
+  const rec = lastRecords.filter(r => r.stim === stim);
+  const ok = rec.filter(r => r.result === "正解").length;
+  return `${ok}/${rec.length}`;
+}
+
+function statTextFrom(records, stim) {
+  const rec = records.filter(r => r.stim === stim);
+  const ok = rec.filter(r => r.result === "正解").length;
+  return `${ok}/${rec.length}`;
+}
+
+function accuracyFrom(records){
+  if(!records.length)
+    return 0;
+  const ok = records.filter(r => r.result === "正解").length;
+  return Math.round(
+    ok * 100 / records.length
+  );
+}
 
   function saveGames(games) {
     const cut = games.slice(-MAX_GAMES);
@@ -583,7 +994,7 @@ console.log(
   function finishIfNeeded() {
     if (!game || game.ended) return;
     const over = game.life <= 0;
-    const clear = game.spawned >= MOLES_PER_STAGE && game.moles.filter((m) => !m.done).length === 0 && !game.spawning;
+    const clear = game.spawned >= currentStage().moleCount && game.moles.filter((m) => !m.done).length === 0 && !game.spawning;
     if (!over && !clear) return;
     game.ended = true;
     clearTimeout(game.nextTimer);
@@ -598,8 +1009,19 @@ console.log(
     saveGames(games);
     lastRecords = game.records.slice();
     setTimeout(() => {
-      renderResult();
-      show("result");
+      const acc = accuracyFrom(game.stageRecords);
+      if(clear){
+        game.stageResults.push({ stageId:game.challenge? "challenge": game.stageId, accuracy: acc });
+      }
+      if(over){
+        showGameOver();
+      }else{
+        if(game.challenge){
+          showMissionComplete();
+        }else{
+          showStageClear();
+        }
+      }
     }, END_DELAY_MS);
   }
 
@@ -614,7 +1036,8 @@ console.log(
     else {
       stim = "無音";
     }
-    game.records.push({
+
+    const rec = {
       user: game.user,
       time: mole.time,
       set: game.set,
@@ -624,7 +1047,9 @@ console.log(
       speakerId: mole.speakerId,
       result,
       rt
-    });
+    };
+    game.records.push(rec);
+    game.stageRecords.push(rec);
   }
 
   function applyCorrect(mole, rt) {
@@ -661,7 +1086,7 @@ console.log(
       setTimeout(() => {
         removeMole(mole);
         finishIfNeeded();
-        if (game && !game.ended && game.spawned < MOLES_PER_STAGE) {
+        if (game && !game.ended && game.spawned < currentStage().moleCount) {
           spawn();
         }
       }, RED_MS);
@@ -669,7 +1094,7 @@ console.log(
     } else {
       removeMole(mole);
       finishIfNeeded();
-      if (game && !game.ended && game.spawned < MOLES_PER_STAGE) {
+      if (game && !game.ended && game.spawned < currentStage().moleCount) {
         setTimeout(() => {
           if (!game || game.ended) return;
           spawn();
@@ -735,7 +1160,7 @@ console.log(
  * 6. 次モグラ予約
  */
   async function spawn() {
-    if (!game || game.ended || game.spawned >= MOLES_PER_STAGE || game.life <= 0) {
+    if (!game || game.ended || game.spawned >= currentStage().moleCount || game.life <= 0) {
       if (game) game.spawning = false;
       finishIfNeeded();
       return;
@@ -751,13 +1176,12 @@ console.log(
     } else {
       kind = pickType();
     }
+    const stage = currentStage();
     let speaker;
-    if (kind === "silent") {
-      speaker = SILENT_SPEAKER;
-    } else if (game.spawned < 10) {
+    if (stage.speakers === 1) {
       speaker = game.speaker0;
-    } else if (game.spawned < 20) {
-      speaker = Math.random() < 0.5 ? game.speaker0 : (game.speaker0 + 1) % 10;
+    } else if (stage.speakers === 2) {
+      speaker = Math.random() < 0.5 ? game.speaker0 :game.speaker1;
     } else {
       speaker = rand(10);
     }
@@ -806,9 +1230,8 @@ console.log(
     });
   }
 
-  async function preloadAudioAssets() {
+  async function preloadAudioAssets(level) {
     const files = [];
-    const level = shouldChallenge() ? "challenge" : "normal";
     const base = `./${SOUNDSET_FOLDER}/${currentSet}/${currentMode}/${level}`;
     for(let s = 1; s <= 10; s++) {
       const n = String(s).padStart(2, "0");
@@ -831,6 +1254,18 @@ console.log(
     return failed;
   }
 
+function createStageSpeakers() {
+  const speaker0 = rand(10);
+  let speaker1;
+  do {
+    speaker1 = rand(10);
+  } while(speaker1 === speaker0);
+  return {
+    speaker0,
+    speaker1
+  };
+}
+
 /**
  * 新しいゲームを開始する
  *
@@ -842,18 +1277,24 @@ console.log(
  */
   async function startGame() {
     ensureAudio();
+    const speakers = createStageSpeakers();
     game = {
       set: currentSet,
       mode: currentMode,
-      challenge: shouldChallenge(),
+      missionId: 1,
+      stageId: 1,
+      challenge: false,
       user: el("name").value.trim(),
-      life: INITIAL_LIFE,
+      life: STAGES[0].life,
       combo: 0,
       score: 0,
       spawned: 0,
       moles: [],
       records: [],
-      speaker0: rand(10),
+      stageRecords: [],
+      stageResults: [],
+      speaker0: speakers.speaker0,
+      speaker1: speakers.speaker1,
       ended: false,
       spawning: false,
       nextTimer: null
@@ -861,16 +1302,8 @@ console.log(
     holes.forEach((h, i) => { h.className = "hole slot" + i; });
     hud();
     show("play");
-    const failed = await preloadAudioAssets();
-    if(failed.length) {
-      alert("音声ファイルの読み込みに失敗しました。\n\n" + failed[0]);
-      show("modeSelect");
-      return;
-    }
-    setTimeout(() => {
-      if (!game || game.ended) return;
-      spawn();
-    }, START_DELAY_MS);
+    updateMissionOverlay();
+    el("overlay").classList.remove("hidden");
   }
 
   function pct(n, d) {
@@ -974,15 +1407,12 @@ console.log(
 
   el("modeWord").onclick = () => {
     currentMode = "word";
-    el("modeWord").classList.add("on");
-    el("modeSentence").classList.remove("on");
+    startGame();
   };
   el("modeSentence").onclick = () => {
     currentMode = "sentence";
-    el("modeSentence").classList.add("on");
-    el("modeWord").classList.remove("on");
+    startGame();
   };
-  el("start").onclick = startGame;
   el("again").onclick = () => {show("modeSelect");};
   el("backToSet").onclick = () => {show("setSelect");};
   el("changeSet").onclick = () => {show("setSelect");};
@@ -1036,7 +1466,7 @@ console.log(
     el("clearLogs").style.display = "none";
     el("showLogs").style.display = "none";
     el("logCount").style.display = "none";
-    el("setFlFr").style.display = "none";
+    //el("setFlFr").style.display = "none";
   }
 
 })();
