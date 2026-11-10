@@ -320,7 +320,7 @@ ul{
     <!-- HUD -->
     <div class="hud">
       <div>ライフ<br><span id="life">10</span></div>
-      <div>コンボ<br><span id="combo">0</span></div>
+      <div>連続正解<br><span id="combo">0</span></div>
       <div>成功率<br><span id="accuracy">0%</span></div>
     </div>
     <!-- モグラスロット -->
@@ -562,7 +562,7 @@ const MISSIONS = {
               "英文の中でLとRの違いを聞き分ける。",
             display: {
               stimA: "I led it.",
-              stimB: "I read it.",
+              stimB: "I read it.（過去形）",
               silent: "無音"
             },
             speakers: 1,
@@ -609,12 +609,12 @@ const MISSIONS = {
           title:
             "最終試験",
           message:
-            "話者数人と英文が変わります。",
+            "話者が数人入れ替わり、英文が（タップ）I collected it.と、（スルー）I collected it.になります。",
           description:
             "未知話者・未知英文への転移を確認する。",
           display: {
             stimA: "I collected it.",
-            stimB: "I corrected it.",
+            stimB: "I collected it.",
             silent: "無音"
           },
           speakers: 10,
@@ -775,7 +775,7 @@ const MISSIONS = {
           title:
             "最終試験",
           message:
-            "話者数人と英文が変わります。",
+            "話者が数人入れ替わり、英文が（タップ）Don't fly it.と、（スルー）Don't fry it.になります。",
           description:
             "未知話者・未知英文への転移を確認する。",
           display: {
@@ -1307,7 +1307,8 @@ function accuracyFrom(records){
   }
 
   function hud() {
-    const acc = accuracyFrom(game.records);
+    const acc = accuracyFrom(game.stageRecords);
+    //const acc = accuracyFrom(game.records);
     el("life").textContent = game.life;
     el("combo").textContent = game.combo;
     el("accuracy").textContent = `${acc}%`;
