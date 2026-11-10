@@ -853,9 +853,10 @@ function currentStage() {
 function showStageStart() {
   const mission = currentMission();
   const stage = currentStageData();
-  el("overlayTitle").textContent = stage.title;
+  //el("overlayTitle").textContent = stage.title;
   // Stage1だけ
   if(game.stageId === 1){
+    el("overlayTitle").textContent = "MISSION START";
     el("overlayBody").innerHTML = `
       <h3>
         ${mission.title}
@@ -888,6 +889,7 @@ function showStageStart() {
       </button>
     `;
   } else {
+    el("overlayTitle").textContent = stage.title;
     el("overlayBody").innerHTML = `
       <p>
         ${stage.message}
