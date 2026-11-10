@@ -272,6 +272,9 @@ ul{
 </head>
 <body>
 
+<!-- =========================
+   メインページ（音を選択）
+   ========================= -->
 <div id="setSelect" class="screen show">
   <h1>音モグラたたきゲーム：英語の音の違いを聞き取ろう！（テスト版）</h1>
   <p id="username-label">ユーザー名（任意）</p>
@@ -279,15 +282,18 @@ ul{
   <p>聞き分ける音を選ぶ</p>
   <div class="row">
     <button id="setLR" type="button">
-      LとR（難易度★★★★☆）
+      LとR（難易度）
     </button>
     <button id="setFlFr" type="button">
-      FlとFr（難易度★★★★★）
+      FlとFr（難易度）
     </button>
   </div>
   <p>まずはLとRの聞き分けから始めるのがおすすめ！</p>
 </div>
 
+<!-- =========================
+   モード選択ページ
+   ========================= -->
 <div id="modeSelect" class="screen" hidden>
   <h1>モード選択</h1>
   <p id="currentSetLabel"></p>
@@ -304,15 +310,18 @@ ul{
 </div>
 </div>
 
+<!-- =========================
+   ゲーム画面
+   ========================= -->
 <div id="play" class="screen" hidden>
   <div id="gameArea">
     <!-- 背景 -->
     <img class="bg-far" src="image/background_1.png">
     <!-- HUD -->
     <div class="hud">
-      <div>ライフ<br><span id="life">5</span></div>
+      <div>ライフ<br><span id="life">10</span></div>
       <div>コンボ<br><span id="combo">0</span></div>
-      <div>スコア<br><span id="score">0</span></div>
+      <div>成功率<br><span id="accuracy">0%</span></div>
     </div>
     <!-- モグラスロット -->
     <div class="hole slot0" data-i="0">
@@ -376,6 +385,9 @@ ul{
   </div>
 </div>
 
+<!-- =========================
+   結果ページ
+   ========================= -->
 <div id="result" class="screen" hidden>
   <h1>結果</h1>
   <div class="stats">
@@ -394,6 +406,9 @@ ul{
 </div>
 </div>
 
+<!-- =========================
+   今回のプレイログページ
+   ========================= -->
 <div id="playLog" class="screen" hidden>
   <h1>今回のプレイログ</h1>
   <div id="playLogList"></div>
@@ -404,6 +419,9 @@ ul{
   </div>
 </div>
 
+<!-- =========================
+   フレイ履歴ページ
+   ========================= -->
 <div id="history" class="screen" hidden>
   <h1>プレイ履歴</h1>
   <div id="historyList"></div>
@@ -414,55 +432,366 @@ ul{
   </div>
 </div>
 
+<!-- =========================
+   ここからjavascript
+   ========================= -->
 <script>
 (function () {
   const APP_VERSION = "1.00";			// 将来的にversionがアップしたときのお知らせに使う.
   const SOUNDSET_FOLDER = "soundsets";		// 音声フォルダの名前。なかのファイルをアップデートしたときにcacheされたものが使われないように、名前を"soundsets_v1_00"などに変更する.
-  const CHALLENGE_EVERY = 1000;			// チャレンジの発生頻度.
   const STUDENT_MODE = true;			// 生徒用モード。履歴の確認、CSVダウンロードなどのボタンを隠すためのもの.
   const START_DELAY_MS = 700;			// ゲーム画面に遷移後、ゲームが始まるまでの時間.
   const END_DELAY_MS = 500;			// ゲームが終了後、結果画面に遷移するまでの時間.
-  const MAX_LIFE = 10;
-  const COMBO_LIFE_EVERY = 3;
+  const MAX_LIFE = 10;				////// これはMISSIONS内で定義する方向で。なので後に削除.
   const POST_AUDIO_LINGER_RATIO = 3.0;	// 音声再生後にモグラが画面に残る時間.
   const MAX_LINGER_MS = 3000;			// 音声再生後にモグラが画面にこのる時間の上限.
   const MIN_STIMULUS_RATE = 0.8;		// 音声を減速させる係数の最小値.
   const MAX_STIMULUS_RATE = 1.8;		// 音声を加速させる係数の最大値.
   const MIN_SFX_RATE = 0.5;			// 正解・不正解の効果音を減速させる係数の最小値.
   const MAX_SFX_RATE = 3.0;			// 正解・不正解の効果音を加速させる係数の最大値.
-  const SFX_VOLUME_RATIO = 0.6;			// 正解・不正解の効果音の音量の規定値を決める係数.
+  const SFX_VOLUME_RATIO = 0.6;		// 正解・不正解の効果音の音量の規定値を決める係数.
   const SFX_DURATION_RATIO = 0.7;		// 正解・不正解の効果音の再生時間の規定値を決める係数.
   const MAX_GAMES = 500;				// ローカルのログに保存されるゲームの最大値.
-  const BASE_AUDIO_MS = 700;			// 音声ファイルが読み込めなかったときには合成音を使うことになる。その合成音の既定の長さ.
-  const RED_MS = 300;					// 不正解の時にモグラが赤色になる時間.
+  const BASE_AUDIO_MS = 700;			// 音声ファイルの既定の長さ.
+  const RED_MS = 300;				// 不正解の時にモグラが赤色になる時間.
   const RESPAWN_DELAY_MS = 80;		// 次のモグラが現れるまでの待ち時間.
   const STORAGE_KEY = "lrMoleGames_v1";
   const KEYS = ["f", "g", "h", "j"];
-  const STAGES = [
-    {
-      id: 1,
-      speakers: 1,
-      moleCount: 30,
-      life: 10
+
+const MISSIONS = {
+  LR: {
+    label:
+      "LとR（難易度：★★★★☆）",
+    title:
+      "LとRを聞き分けよう！",
+    targets: {
+      A: "L",
+      B: "R"
     },
-    {
-      id: 2,
-      speakers: 2,
-      moleCount: 30,
-      life: 10
-    },
-    {
-      id: 3,
-      speakers: 10,
-      moleCount: 30,
-      life: 10
+
+    modes: {
+      word: {
+        label:
+          "単語モード",
+        title:
+          "単語の聞き分け",
+
+        stages: [
+          {
+            title:
+              "Stage 1",
+            message:
+              "「light」をタップし、「right」を見送ります。",
+            description:
+              "まずは1人の話者でLとRの違いを学ぶ。",
+            display: {
+              stimA: "light",
+              stimB: "right",
+              silent: "無音"
+            },
+            speakers: 1,
+            moleCount: 30,
+            life: 10
+          },
+
+          {
+            title:
+              "Stage 2",
+            message:
+              "話者が2人になります。",
+            description:
+              "複数の話者の発音で練習する。",
+            display: {
+              stimA: "light",
+              stimB: "right",
+              silent: "無音"
+            },
+            speakers: 2,
+            moleCount: 30,
+            life: 10
+          },
+
+          {
+            title:
+              "Stage 3",
+            message:
+              "話者が10人になります。",
+            description:
+              "話者の違いに左右されず聞き分けられるか確認する。",
+            display: {
+              stimA: "light",
+              stimB: "right",
+              silent: "無音"
+            },
+            speakers: 10,
+            moleCount: 30,
+            life: 10
+          }
+        ],
+
+        challenge: {
+          title:
+            "最終試験",
+          message:
+            "話者がすべて変わります。",
+          description:
+            "学習していない話者で聞き分けられるか確認する。",
+          display: {
+            stimA: "light",
+            stimB: "right",
+            silent: "無音"
+          },
+          speakers: 10,
+          moleCount: 30,
+          life: 10
+        }
+      },
+
+      sentence: {
+        label:
+          "英文モード",
+        title:
+          "英文の聞き分け",
+        stages: [
+          {
+            title:
+              "Stage 1",
+            message:
+              "「I led it.」をタップし、「I read it.（過去形）」を見送ります。",
+            description:
+              "英文の中でLとRの違いを聞き分ける。",
+            display: {
+              stimA: "I led it.",
+              stimB: "I read it.",
+              silent: "無音"
+            },
+            speakers: 1,
+            moleCount: 30,
+            life: 10
+          },
+
+          {
+            title:
+              "Stage 2",
+            message:
+              "話者が2人になります。",
+            description:
+              "異なる話者の英文で練習する。",
+            display: {
+              stimA: "I led it.",
+              stimB: "I read it.",
+              silent: "無音"
+            },
+            speakers: 2,
+            moleCount: 30,
+            life: 10
+          },
+
+          {
+            title:
+              "Stage 3",
+            message:
+              "話者が10人になります。",
+            description:
+              "話者に依存しない聞き分けを目指す。",
+            display: {
+              stimA: "I led it.",
+              stimB: "I read it.",
+              silent: "無音"
+            },
+            speakers: 10,
+            moleCount: 30,
+            life: 10
+          }
+        ],
+
+        challenge: {
+          title:
+            "最終試験",
+          message:
+            "話者数人と英文が変わります。",
+          description:
+            "未知話者・未知英文への転移を確認する。",
+          display: {
+            stimA: "I collected it.",
+            stimB: "I corrected it.",
+            silent: "無音"
+          },
+          speakers: 10,
+          moleCount: 30,
+          life: 10
+        }
+      }
     }
-  ];
-  const CHALLENGE_STAGE = {
-    speakers: 10,
-    moleCount: 30,
-    life: 10
-  };
+  },
+
+ FlFr: {
+    label:
+      "FlとFr（難易度：★★★★★）",
+    title:
+      "FlとFrを聞き分けよう！",
+    targets: {
+      A: "Fl",
+      B: "Fr"
+    },
+
+    modes: {
+      word: {
+        label:
+          "単語モード",
+        title:
+          "単語の聞き分け",
+
+        stages: [
+          {
+            title:
+              "Stage 1",
+            message:
+              "「flute」をタップし、「fruit」を見送ります。",
+            description:
+              "まずは1人の話者でFlとFrの違いを学ぶ。",
+            display: {
+              stimA: "flute",
+              stimB: "fruit",
+              silent: "無音"
+            },
+            speakers: 1,
+            moleCount: 30,
+            life: 10
+          },
+
+          {
+            title:
+              "Stage 2",
+            message:
+              "話者が2人になります。",
+            description:
+              "複数の話者の発音で練習する。",
+            display: {
+              stimA: "flute",
+              stimB: "fruit",
+              silent: "無音"
+            },
+            speakers: 2,
+            moleCount: 30,
+            life: 10
+          },
+
+          {
+            title:
+              "Stage 3",
+            message:
+              "話者が10人になります。",
+            description:
+              "話者の違いに左右されず聞き分けられるか確認する。",
+            display: {
+              stimA: "flute",
+              stimB: "fruit",
+              silent: "無音"
+            },
+            speakers: 10,
+            moleCount: 30,
+            life: 10
+          }
+        ],
+
+        challenge: {
+          title:
+            "最終試験",
+          message:
+            "話者がすべて変わります。",
+          description:
+            "学習していない話者で聞き分けられるか確認する。",
+          display: {
+            stimA: "flute",
+            stimB: "fruit",
+            silent: "無音"
+          },
+          speakers: 10,
+          moleCount: 30,
+          life: 10
+        }
+      },
+
+      sentence: {
+        label:
+          "英文モード",
+        title:
+          "英文の聞き分け",
+        stages: [
+          {
+            title:
+              "Stage 1",
+            message:
+              "「I checked the flame.」をタップし、「I checked the frame.」を見送ります。",
+            description:
+              "英文の中でFlとFrの違いを聞き分ける。",
+            display: {
+              stimA: "I checked the flame.",
+              stimB: "I checked the frame.",
+              silent: "無音"
+            },
+            speakers: 1,
+            moleCount: 30,
+            life: 10
+          },
+
+          {
+            title:
+              "Stage 2",
+            message:
+              "話者が2人になります。",
+            description:
+              "異なる話者の英文で練習する。",
+            display: {
+              stimA: "I checked the flame.",
+              stimB: "I checked the frame.",
+              silent: "無音"
+            },
+            speakers: 2,
+            moleCount: 30,
+            life: 10
+          },
+
+          {
+            title:
+              "Stage 3",
+            message:
+              "話者が10人になります。",
+            description:
+              "話者に依存しない聞き分けを目指す。",
+            display: {
+              stimA: "I checked the flame.",
+              stimB: "I checked the frame.",
+              silent: "無音"
+            },
+            speakers: 10,
+            moleCount: 30,
+            life: 10
+          }
+        ],
+
+        challenge: {
+          title:
+            "最終試験",
+          message:
+            "話者数人と英文が変わります。",
+          description:
+            "未知話者・未知英文への転移を確認する。",
+          display: {
+            stimA: "Don't fly it.",
+            stimB: "Don't fry it.",
+            silent: "無音"
+          },
+          speakers: 10,
+          moleCount: 30,
+          life: 10
+        }
+      }
+    }
+  }
+
+};
 
   const el = (id) => document.getElementById(id);
   const holes = [...document.querySelectorAll(".hole")];
@@ -490,30 +819,57 @@ function show(id) {
     });
   }
 
-function currentStage() {
-  if(game.challenge){
-    return CHALLENGE_STAGE;
-  }
-  return STAGES[game.stageId - 1];
+function updateMissionButtons() {
+  el("setLR").textContent = MISSIONS.LR.label;
+  el("setFlFr").textContent = MISSIONS.FlFr.label;
 }
 
-function updateMissionOverlay() {
-  el("overlayTitle").textContent = `MISSION 1 - STAGE ${game.stageId}`;
-  if(currentMode === "word") {
+function updateModeSelectScreen() {
+  const mission = currentMission();
+  el("currentSetLabel").textContent = mission.title;
+  el("modeWord").textContent = mission.modes.word.label;
+  el("modeSentence").textContent = mission.modes.sentence.label;
+}
+
+function currentMission() {
+  return MISSIONS[currentSet];
+}
+
+function currentModeData() {
+  return currentMission().modes[currentMode];
+}
+
+function currentStageData() {
+  if(game.challenge){
+    return currentModeData().challenge;
+  }
+  return currentModeData().stages[game.stageId - 1];
+}
+
+function currentStage() {
+  return currentStageData();
+}
+
+function showStageStart() {
+  const mission = currentMission();
+  const stage = currentStageData();
+  el("overlayTitle").textContent = stage.title;
+  // Stage1だけ
+  if(game.stageId === 1){
     el("overlayBody").innerHTML = `
       <h3>
-        L と R を聞き分けよう
+        ${mission.title}
       </h3>
       <hr>
       <p><strong>タップする</strong></p>
       <p>
-        ・「light」と言うモグラ<br>
+        ・「${stage.display.stimA}」と言うモグラ<br>
         ・何も言わないモグラ
       </p>
       <hr>
       <p><strong>見送る</strong></p>
       <p>
-        ・「right」と言うモグラ
+        ・「${stage.display.stimB}」と言うモグラ
       </p>
       <hr>
       <p><strong>ヒント</strong></p>
@@ -525,38 +881,21 @@ function updateMissionOverlay() {
       <p>
         [F] [G] [H] [J]
       </p>
-      <button id="overlayStart" type="button">
+      <button
+        id="overlayStart"
+        type="button">
         Start
       </button>
     `;
   } else {
-
     el("overlayBody").innerHTML = `
-      <h3>
-        L と R を聞き分けよう
-      </h3>
-      <hr>
-      <p><strong>モグラをタップする</strong></p>
       <p>
-        ・「I led it.」と言うモグラ<br>
-        ・何も言わないモグラ
+        ${stage.message}
       </p>
       <hr>
-      <p><strong>見送る</strong></p>
-      <p>
-        ・「I read it.（過去形）」と言うモグラ
-      </p>
-      <hr>
-      <p><strong>ヒント</strong></p>
-      <p>
-        モグラの鳴き声に<br>
-        気を取られないように！
-      </p>
-      <hr>
-      <p>
-        [F] [G] [H] [J]
-      </p>
-      <button id="overlayStart" type="button">
+      <button
+        id="overlayStart"
+        type="button">
         Start
       </button>
     `;
@@ -565,23 +904,24 @@ function updateMissionOverlay() {
 }
 
 function showStageClear() {
+  const stage = currentStageData();
   const acc = accuracyFrom(game.stageRecords);
   el("overlayTitle").textContent = "STAGE CLEAR";
   el("overlayBody").innerHTML = `
     <h3>
-      Stage ${game.stageId} Clear
+      ${stage.title} Clear
     </h3>
     <hr>
     <p>
       成功率<br>${acc}%</p>
     <p>
-      L：${statTextFrom(game.stageRecords,"L")}
+      ${stage.display.stimA}：${statTextFrom(game.stageRecords,"L")}
     </p>
     <p>
-      R：${statTextFrom(game.stageRecords,"R")}
+       ${stage.display.stimB}：${statTextFrom(game.stageRecords,"R")}
     </p>
     <p>
-      無音：${statTextFrom(game.stageRecords,"無音")}
+       ${stage.display.silent}：${statTextFrom(game.stageRecords,"無音")}
     </p>
     <hr>
     <button
@@ -592,7 +932,7 @@ function showStageClear() {
   `;
   el("overlay").classList.remove("hidden");
   el("continueBtn").onclick = () => {
-    if(game.stageId >= STAGES.length){
+    if(game.stageId >= currentModeData().stages.length){
       game.challenge = true;
       showChallengeStart();
       return;
@@ -605,12 +945,15 @@ function showStageClear() {
     game.moles = [];
     game.spawning = false;
     game.ended = false;
-    updateMissionOverlay();
+    showStageStart();
     el("overlay").classList.remove("hidden");
   };
 }
 
 function showMissionComplete() {
+  const mission = currentMission();
+  const title = mission.title;
+  const display = mission.targets;
   const results = game.stageResults;
   const stage1 = results.find(r => r.stageId === 1);
   const stage2 = results.find(r => r.stageId === 2);
@@ -622,7 +965,7 @@ function showMissionComplete() {
   el("overlayTitle").textContent = "MISSION COMPLETE";
   el("overlayBody").innerHTML = `
     <h3>
-      「LとRの聞き分け」完了！
+      「${title}」を完了しました！
     </h3>
     <hr>
     <p>
@@ -643,13 +986,13 @@ function showMissionComplete() {
     </p>
     <hr>
     <p>
-      L：${statText("L")}
+     ${display.A}：${statTextFrom(lastRecords, "L")}
     </p>
     <p>
-      R：${statText("R")}
+      ${display.B}：${statTextFrom(lastRecords, "R")}
     </p>
     <p>
-      無音：${statText("無音")}
+      無音：${statTextFrom(lastRecords, "無音")}
     </p>
     <hr>
     <button id="resultBtn" type="button">
@@ -673,14 +1016,15 @@ function showMissionComplete() {
 }
 
 function showChallengeStart() {
+  const stage = currentStageData();
   el("overlayTitle").textContent = "CHALLENGE";
   el("overlayBody").innerHTML = `
     <h3>
-      最終試験
+      ${stage.title}
     </h3>
     <hr>
     <p>
-      話者がすべて変わります。
+      ${stage.message}
     </p>
     <hr>
     <button
@@ -690,7 +1034,6 @@ function showChallengeStart() {
     </button>
   `;
   el("overlay").classList.remove("hidden");
-
   el("challengeStartBtn").onclick = async () => {
     const failed = await preloadAudioAssets("challenge");
     if(failed.length){
@@ -699,7 +1042,7 @@ function showChallengeStart() {
       );
       return;
     }
-    game.life = CHALLENGE_STAGE.life;
+    game.life = currentModeData().challenge.life;
     game.stageRecords = [];
     game.spawned = 0;
     game.moles = [];
@@ -716,6 +1059,7 @@ function showChallengeStart() {
 }
 
 function showGameOver() {
+  const stage = currentStageData();
   const acc = accuracyFrom(game.stageRecords);
   el("overlayTitle").textContent = "GAME OVER";
   el("overlayBody").innerHTML = `
@@ -726,13 +1070,13 @@ function showGameOver() {
     <p>
       成功率<br>${acc}%</p>
     <p>
-      L：${statTextFrom(game.stageRecords,"L")}
+      ${stage.display.stimA}：${statTextFrom(game.stageRecords,"L")}
     </p>
     <p>
-      R：${statTextFrom(game.stageRecords,"R")}
+      ${stage.display.stimB}：${statTextFrom(game.stageRecords,"R")}
     </p>
     <p>
-      無音：${statTextFrom(game.stageRecords,"無音")}
+      ${stage.display.silent}：${statTextFrom(game.stageRecords,"無音")}
     </p>
     <hr>
     <button
@@ -786,7 +1130,7 @@ function bindOverlayStart() {
     if (r < 0.4) return "A";
     if (r < 0.8) return "B";
     return "silent";
-}
+  }
   function speedAt(i) {
     const p = i / Math.max(1, currentStage().moleCount - 1);
     const trend = 1 + p * 0.7;
@@ -896,12 +1240,6 @@ console.log(
     }
   }
 
-function statText(stim) {
-  const rec = lastRecords.filter(r => r.stim === stim);
-  const ok = rec.filter(r => r.result === "正解").length;
-  return `${ok}/${rec.length}`;
-}
-
 function statTextFrom(records, stim) {
   const rec = records.filter(r => r.stim === stim);
   const ok = rec.filter(r => r.result === "正解").length;
@@ -912,9 +1250,7 @@ function accuracyFrom(records){
   if(!records.length)
     return 0;
   const ok = records.filter(r => r.result === "正解").length;
-  return Math.round(
-    ok * 100 / records.length
-  );
+  return Math.round(ok * 100 / records.length);
 }
 
   function saveGames(games) {
@@ -933,9 +1269,6 @@ function accuracyFrom(records){
     updateLogCount();
   }
 
-/**
- * 保存済みプレイログを全削除する
- */
   function clearLogs() {
     localStorage.removeItem(STORAGE_KEY);
     lastRecords = [];
@@ -953,6 +1286,7 @@ function accuracyFrom(records){
     if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   }
+
   function toCsv(rows) {
     const head = ["ユーザー名","プレイ日時","ステージモード","出現音声","話者ID","正誤","反応速度（ミリ秒）"];
     const body = rows.map((r) => [
@@ -960,6 +1294,7 @@ function accuracyFrom(records){
     ].map(csvEscape).join(","));
     return "\uFEFF" + [head.join(","), ...body].join("\r\n");
   }
+
   function downloadCsv(name, rows) {
     const blob = new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
@@ -970,9 +1305,10 @@ function accuracyFrom(records){
   }
 
   function hud() {
+    const acc = accuracyFrom(game.records);
     el("life").textContent = game.life;
     el("combo").textContent = game.combo;
-    el("score").textContent = game.score;
+    el("accuracy").textContent = `${acc}%`;
   }
 
   function setHole(i, cls) {
@@ -981,14 +1317,6 @@ function accuracyFrom(records){
 
   function occupy() {
     return game.moles.map((m) => m.hole);
-  }
-
-  function shouldChallenge() {
-    const count = loadGames().filter(g =>
-      g.set === currentSet &&
-      g.mode === currentMode
-    ).length;
-    return ((count + 1) % CHALLENGE_EVERY) === 0;
   }
 
   function finishIfNeeded() {
@@ -1036,7 +1364,6 @@ function accuracyFrom(records){
     else {
       stim = "無音";
     }
-
     const rec = {
       user: game.user,
       time: mole.time,
@@ -1055,9 +1382,6 @@ function accuracyFrom(records){
   function applyCorrect(mole, rt) {
     game.score += 100;
     game.combo += 1;
-    if (game.combo > 0 && game.combo % COMBO_LIFE_EVERY === 0 && game.life < MAX_LIFE) {
-      game.life += 1;
-    }
     hud();
     record(mole, "正解", rt);
     playFeedback(true, mole.speaker);
@@ -1090,7 +1414,6 @@ function accuracyFrom(records){
           spawn();
         }
       }, RED_MS);
-
     } else {
       removeMole(mole);
       finishIfNeeded();
@@ -1125,7 +1448,7 @@ function accuracyFrom(records){
   }
 
 /**
- * プレイヤーが穴を叩いた時の処理
+ * プレイヤーがモグラを叩いた時の処理
  *
  * A      → 叩く
  * silent → 叩く
@@ -1153,7 +1476,7 @@ function accuracyFrom(records){
  *
  * 処理手順
  * 1. 出現位置決定
- * 2. L/R/無音決定
+ * 2. A/B/無音決定
  * 3. 話者決定
  * 4. 音声再生
  * 5. 反応受付
@@ -1285,7 +1608,7 @@ function createStageSpeakers() {
       stageId: 1,
       challenge: false,
       user: el("name").value.trim(),
-      life: STAGES[0].life,
+      life: currentModeData().stages[0].life,
       combo: 0,
       score: 0,
       spawned: 0,
@@ -1302,7 +1625,7 @@ function createStageSpeakers() {
     holes.forEach((h, i) => { h.className = "hole slot" + i; });
     hud();
     show("play");
-    updateMissionOverlay();
+    showStageStart();
     el("overlay").classList.remove("hidden");
   }
 
@@ -1386,7 +1709,6 @@ function createStageSpeakers() {
     const taps = rec.filter((r) => r.result === "正解" && r.rt != null);
     const avg = taps.length ? Math.round(taps.reduce((a, r) => a + r.rt, 0) / taps.length) : null;
     el("rRt").textContent = avg == null ? "（タップ成功なし）" : avg + " ms";
-
     // 星判定.
     const total = rec.length;
     const correct = rec.filter(r => r.result === "正解").length;
@@ -1405,6 +1727,10 @@ function createStageSpeakers() {
     el("starLabel").textContent = label;
   }
 
+
+/**
+ * マウス、キーボード、タップなど入力（ボタンのクリック、モグラをタップ）の処理.
+ */
   el("modeWord").onclick = () => {
     currentMode = "word";
     startGame();
@@ -1440,12 +1766,12 @@ function createStageSpeakers() {
   });
   el("setLR").onclick = () => {
     currentSet = "LR";
-    el("currentSetLabel").textContent = "音: L/R";
+    updateModeSelectScreen();
     show("modeSelect");
     };
   el("setFlFr").onclick = () => {
     currentSet = "FlFr";
-    el("currentSetLabel").textContent = "音: Fl/Fr";
+    updateModeSelectScreen();
     show("modeSelect");
     };
 
@@ -1457,6 +1783,8 @@ function createStageSpeakers() {
     }
   });
   updateLogCount();
+  updateMissionButtons();
+
 
 // 生徒版ではユーザー名や管理用UIを非表示
   if (STUDENT_MODE) {
