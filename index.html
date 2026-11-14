@@ -31,10 +31,6 @@ button{
 button:hover{
   background:#a8a8a8;
 }
-button.on{
-  background:#8a8a8a;
-  color:#222;
-}
 input[type="text"]{
   padding:10px;
   width:240px;
@@ -71,6 +67,11 @@ ul{
   margin:12px 0;
 }
 
+.mission-desc{
+  color:#555;
+  font-size:14px;
+}
+
 .menu-screen{
   position:relative;
   min-height:100vh;
@@ -96,9 +97,123 @@ ul{
 
 .menu-panel h1{
   text-align:center;
-  font-size:32px;
+  font-size:24px;
   color:#35592f;
+  margin:24px 0;
+}
+
+.menu-panel button{
+  background:#4f7a3f;
+  color:#fff;
+  border-radius:12px;
+  min-width:180px;
+}
+
+.menu-panel button:hover{
+  background:#3f6232;
+}
+
+.mission-card.coming-soon{
+  opacity:.85;
+}
+
+.mission-card button:disabled{
+  background:#9aa09b;
+  color:#f0f0f0;
+  cursor:not-allowed;
+}
+
+.app-header{
+  text-align:center;
   margin-bottom:24px;
+}
+
+.app-title-main{
+  font-size:36px;
+  font-weight:700;
+  color:#35592f;
+  line-height:1.2;
+}
+
+.app-title-sub{
+  margin-top:8px;
+  font-size:18px;
+  color:#4f6b47;
+}
+
+.app-footer{
+  position:absolute;
+  bottom:16px;
+  right:24px;
+  text-align:right;
+  color:rgba(255,255,255,.8);
+  font-size:12px;
+  text-shadow:
+    0 1px 4px rgba(0,0,0,.4);
+}
+
+.mission-card{
+  margin:20px 0;
+  padding:24px;
+  border-radius:20px;
+  background:#f8fbf6;
+  border:1px solid #b7c7ac;
+  box-shadow:
+    0 6px 18px rgba(0,0,0,.08);
+}
+
+.mission-card h2{
+  margin-bottom:8px;
+  color:#35592f;
+  font-size:24px;
+}
+
+.difficulty{
+  margin-bottom:12px;
+  color:#c99600;
+  font-size:18px;
+  font-weight:700;
+}
+
+.mission-card p{
+  margin-bottom:10px;
+}
+
+.mission-card button{
+  width:100%;
+  max-width:320px;
+  display:block;
+  margin:16px auto 0;
+}
+
+.mode-card{
+  margin:20px 0;
+  padding:24px;
+  border-radius:20px;
+  background:#f8fbf6;
+  border:1px solid #b7c7ac;
+  box-shadow:
+    0 6px 18px rgba(0,0,0,.08);
+}
+
+.mode-card h2{
+  margin-bottom:12px;
+  color:#35592f;
+  font-size:22px;
+}
+
+.mode-card button{
+  width:100%;
+  max-width:320px;
+  display:block;
+  margin:0 auto;
+}
+
+.mode-summary{
+  margin-bottom:18px;
+  color:#556050;
+  line-height:1.6;
+  font-size:14px;
 }
 
 /* =========================
@@ -310,24 +425,57 @@ ul{
    メインページ（音を選択）
    ========================= -->
 <div id="setSelect" class="screen show menu-screen">
+  <div class="app-footer">
+    © 2026 Shojiro<br>
+    All Rights Reserved.
+  </div>
   <div class="menu-panel">
-    <h1>音モグラたたきゲーム：音を聞き分けモグラをたたく！</h1>
+    <div class="app-header">
+      <div class="app-title-main">
+        音モグラたたきゲーム
+      </div>
+      <div class="app-title-sub">
+        音を聞き分けモグラをたたく！
+      </div>
+    </div>
+    <hr>
     <p id="username-label">ユーザー名（任意）</p>
     <p style="margin:8px 0 16px"><input id="name" type="text" maxlength="40" placeholder="nickname"></p>
-    <p>聞き分ける音を選ぶ</p>
-    <div class="row">
-      <button id="setLR" type="button">
-        LとR（難易度）
-      </button>
-        （lightとrightなどを聞き分ける）
-    </div>
-    <div class="row">
-      <button id="setFlFr" type="button">
-        FlとFr（難易度）
-      </button>
-        （fluteとfruitなどを聞き分ける）
-    </div>
+    <h1>聞き分ける音を選ぶ</h1>
     <p>まずはLとRの聞き分けから始めるのがおすすめ！</p>
+
+    <div class="mission-card">
+      <h2>LとR</h2>
+      <div class="difficulty">★★★★☆</div>
+      <p>light / right</p>
+      <p class="mission-desc">英語学習者におすすめ</p>
+      <button id="setLR" type="button">選択する</button>
+    </div>
+
+    <div class="mission-card">
+      <h2>FlとFr</h2>
+      <div class="difficulty">★★★★★</div>
+      <p>flute / fruit</p>
+      <p class="mission-desc">難易度高め</p>
+      <button id="setFlFr" type="button">選択する</button>
+    </div>
+
+    <div class="mission-card coming-soon">
+      <h2>BとV</h2>
+      <div class="difficulty">★★★☆☆</div>
+      <p>berry / very</p>
+      <p class="mission-desc">準備中</p>
+      <button type="button" disabled>Coming Soon</button>
+    </div>
+
+    <div class="mission-card coming-soon">
+      <h2>おじさん／おじいさん</h2>
+      <div class="difficulty">★★★★☆</div>
+      <p>日本語学習者向け</p>
+      <p class="mission-desc">準備中</p>
+      <button type="button" disabled>Coming Soon</button>
+    </div>
+
   </div>
 </div>
 
@@ -335,15 +483,46 @@ ul{
    モード選択ページ
    ========================= -->
 <div id="modeSelect" class="screen menu-screen" hidden>
+  <div class="app-footer">
+    © 2026 Shojiro<br>
+    All Rights Reserved.
+  </div>
   <div class="menu-panel">
-    <h1>モード選択</h1>
-    <p id="currentSetLabel"></p>
-    <div class="row">
-      <button id="modeWord" type="button">単語モード</button>
+    <div class="app-header">
+      <div class="app-title-main">
+        音モグラたたきゲーム
+      </div>
+      <div class="app-title-sub">
+        音を聞き分けモグラをたたく！
+      </div>
     </div>
-    <div class="row">
-      <button id="modeSentence" type="button">英文モード</button>
-    </div>
+    <hr>
+    <h1>モードを選ぶ</h1>
+    <p id="currentSetLabel" class="mode-target"></p>
+
+<div class="mode-card">
+  <h2 id="modeWordTitle">
+    単語モード
+  </h2>
+  <p id="modeWordSummary"
+     class="mode-summary">
+  </p>
+  <button id="modeWord" type="button">
+    プレイする
+  </button>
+</div>
+<div class="mode-card">
+  <h2 id="modeSentenceTitle">
+    英文モード
+  </h2>
+  <p id="modeSentenceSummary"
+     class="mode-summary">
+  </p>
+  <button id="modeSentence" type="button">
+    プレイする
+  </button>
+</div>
+
     <div class="row">
     <button id="backToSet" type="button">音の選択へ戻る</button>
     <button id="showLogs" type="button">プレイ履歴</button>
@@ -433,7 +612,20 @@ ul{
    マイページ
    ========================= -->
 <div id="myPage" class="screen menu-screen" hidden>
+  <div class="app-footer">
+    © 2026 Shojiro<br>
+    All Rights Reserved.
+  </div>
   <div class="menu-panel">
+    <div class="app-header">
+      <div class="app-title-main">
+        音モグラたたきゲーム
+      </div>
+      <div class="app-title-sub">
+        音を聞き分けモグラをたたく！
+      </div>
+    </div>
+    <hr>
     <h1>マイページ</h1>
     <div class="stats">
       <p>
@@ -476,7 +668,6 @@ ul{
   const STUDENT_MODE = true;			// 生徒用モード。履歴の確認、CSVダウンロードなどのボタンを隠すためのもの.
   const START_DELAY_MS = 700;			// ゲーム画面に遷移後、ゲームが始まるまでの時間.
   const END_DELAY_MS = 500;			// ゲームが終了後、マイページ画面に遷移するまでの時間.
-  const MAX_LIFE = 10;				////// これはMISSIONS内で定義する方向で。なので後に削除.
   const POST_AUDIO_LINGER_RATIO = 3.0;	// 音声再生後にモグラが画面に残る時間.
   const MAX_LINGER_MS = 3000;			// 音声再生後にモグラが画面にこのる時間の上限.
   const MIN_STIMULUS_RATE = 0.8;		// 音声を減速させる係数の最小値.
@@ -488,19 +679,17 @@ ul{
   const MAX_GAMES = 500;				// ローカルのログに保存されるゲームの最大値.
   const BASE_AUDIO_MS = 700;			// 音声ファイルの既定の長さ.
   const RED_MS = 300;				// 不正解の時にモグラが赤色になる時間.
-  const RESPAWN_DELAY_MS = 80;		// 次のモグラが現れるまでの待ち時間.
+  const RESPAWN_DELAY_MS = 200;		// 次のモグラが現れるまでの待ち時間.
   const STORAGE_KEY = "lrMoleGames_v1";
   const KEYS = ["f", "g", "h", "j"];
 
 const MISSIONS = {
   LR: {
-    label:
-      "LとR（難易度：★★★★☆）",
-    title:
-      "LとRを聞き分けよう！",
-    targets: {
-      A: "L",
-      B: "R"
+    label: "LとR",
+    title: "LとRを聞き分けよう！",
+    targets:{
+      A:"L",
+      B:"R"
     },
 
     modes: {
@@ -509,7 +698,8 @@ const MISSIONS = {
           "単語モード",
         title:
           "単語の聞き分け",
-
+        summary:
+          "単語の中で音を聞き分ける",
         stages: [
           {
             title:
@@ -586,6 +776,8 @@ const MISSIONS = {
           "英文モード",
         title:
           "英文の聞き分け",
+        summary:
+          "英文の中で音を聞き分ける",
         stages: [
           {
             title:
@@ -659,11 +851,10 @@ const MISSIONS = {
     }
   },
 
- FlFr: {
-    label:
-      "FlとFr（難易度：★★★★★）",
-    title:
-      "FlとFrを聞き分けよう！",
+  FlFr: {
+    label: "FlとFr",
+    title: "FlとFrを聞き分けよう！",
+
     targets: {
       A: "Fl",
       B: "Fr"
@@ -675,7 +866,8 @@ const MISSIONS = {
           "単語モード",
         title:
           "単語の聞き分け",
-
+        summary:
+          "単語の中で音を聞き分ける",
         stages: [
           {
             title:
@@ -752,6 +944,8 @@ const MISSIONS = {
           "英文モード",
         title:
           "英文の聞き分け",
+        summary:
+          "英文の中で音を聞き分ける",
         stages: [
           {
             title:
@@ -827,6 +1021,7 @@ const MISSIONS = {
 
 };
 
+
   const el = (id) => document.getElementById(id);
   const holes = [...document.querySelectorAll(".hole")];
 
@@ -852,16 +1047,20 @@ function show(id) {
     });
   }
 
-function updateMissionButtons() {
-  el("setLR").textContent = MISSIONS.LR.label;
-  el("setFlFr").textContent = MISSIONS.FlFr.label;
-}
-
 function updateModeSelectScreen() {
   const mission = currentMission();
   el("currentSetLabel").textContent = mission.title;
-  el("modeWord").textContent = mission.modes.word.label;
-  el("modeSentence").textContent = mission.modes.sentence.label;
+
+  //el("modeWord").textContent = mission.modes.word.label;
+  //el("modeSentence").textContent = mission.modes.sentence.label;
+  el("modeWord").textContent = "プレイする";
+  el("modeSentence").textContent = "プレイする";
+
+  el("modeWordTitle").textContent = mission.modes.word.label;
+  el("modeSentenceTitle").textContent = mission.modes.sentence.label;
+
+  el("modeWordSummary").textContent = mission.modes.word.summary;
+  el("modeSentenceSummary").textContent = mission.modes.sentence.summary;
 }
 
 function currentMission() {
@@ -1151,7 +1350,7 @@ function bindOverlayStart() {
     const failed = await preloadAudioAssets("normal");
     if(failed.length){
       alert(
-        "音声の読み込みに失敗しました"
+        "音声データの読み込みが完了しませんでした。\n通信状況を確認してもう一度お試しください。"
       );
       return;
     }
@@ -1806,7 +2005,6 @@ function renderMyPage() {
     }
   });
   updateLogCount();
-  updateMissionButtons();
 
 
 // 生徒版ではユーザー名や管理用UIを非表示
