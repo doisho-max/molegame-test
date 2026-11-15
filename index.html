@@ -234,7 +234,6 @@ ul{
   position:relative;
   width:min(100vw,1536px);
   aspect-ratio:16 / 9;
-  max-height:100vh;
   margin:auto;
   overflow:hidden;
 }
@@ -376,7 +375,7 @@ ul{
   display:none;
 }
 .overlay-panel{
-  width:min(90%,480px);
+  width:min(90%,600px);
   max-height:90%;
   overflow:auto;
   padding:24px;
@@ -417,6 +416,31 @@ ul{
 /* =========================
    RESULT
    ========================= */
+.rating-box{
+  margin:16px 0;
+  padding:20px;
+  border-radius:16px;
+  background:#fff8dc;
+  border:1px solid #e0c46b;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,.08);
+}
+.rating-stars{
+  font-size:28px;
+  color:#d4a500;
+  line-height:1.4;
+}
+.rating-score{
+  margin-top:8px;
+  font-size:20px;
+  font-weight:700;
+}
+.rating-message{
+  margin-top:10px;
+  font-size:15px;
+  color:#555;
+}
+
 .stats{
   margin:16px 0;
 }
@@ -1231,15 +1255,22 @@ function showMissionComplete() {
       「${title}」を完了しました！
     </h3>
     <hr>
-    <p>
-      総合評価
-    </p>
-    <p style="font-size:20px;">
-      ${stars} (${rating} / 10)
-    </p>
-    <p>
-      ${ratingMessage(rating)}
-    </p>
+
+    <div class="rating-box">
+      <p>
+        総合評価
+      </p>
+      <div class="rating-stars">
+        ${stars}
+      </div>
+      <div class="rating-score">
+        ${rating} / 10
+      </div>
+      <div class="rating-message">
+        ${ratingMessage(rating)}
+      </div>
+    </div>
+
     <hr>
       ${stagesHtml}
     <p>
@@ -1959,12 +1990,12 @@ function ratingStars(rating){
 
 function ratingMessage(rating){
   if(rating >= 9)
-    return "素晴らしい！";
+    return "素晴らしい！ネイティブ級の聞き取りです。";
   if(rating >= 7)
-    return "かなり聞き取れています。";
+    return "かなり聞き取れるようになっています。";
   if(rating >= 5)
-    return "順調です。";
-  return "もう少し練習してみましょう。";
+    return "耳が少しずつ育ってきています。";
+  return "大丈夫です。聞こえ始める瞬間は必ずやってきます。";
 }
 
 function renderMyPage() {
