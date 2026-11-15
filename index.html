@@ -13,7 +13,7 @@
 }
 body{
   font-family:sans-serif;
-  background:#d0d0d0;
+  background:#303030;
   color:#444;
   min-height:100vh;
 }
@@ -222,11 +222,19 @@ ul{
 #play{
   padding:0;
 }
-/* 1536:864 = 16:9 */
+
+#play.show{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+
 #gameArea{
   position:relative;
   width:min(100vw,1536px);
   aspect-ratio:16 / 9;
+  max-height:100vh;
   margin:auto;
   overflow:hidden;
 }
@@ -264,6 +272,18 @@ ul{
   text-align:center;
   border-radius:10px;
 }
+
+@media (max-width: 768px){
+  .hud{
+    gap:8px;
+  }
+  .hud div{
+    min-width:72px;
+    padding:8px 10px;
+    font-size:13px;
+  }
+}
+
 /* =========================
    MOLE SLOTS
    ========================= */
@@ -471,7 +491,7 @@ ul{
     <div class="mission-card coming-soon">
       <h2>おじさん／おじいさん</h2>
       <div class="difficulty">★★★★☆</div>
-      <p>日本語学習者向け。日本語話者以外には超難関！日本語話者にとってのLとRの聞き分け以上の難しさかも。</p>
+      <p>日本語学習者向け。日本語学習者の多くにとって超難関！日本語話者にとってのLとRの聞き分け以上の難しさかも。</p>
       <p class="mission-desc">準備中</p>
       <button type="button" disabled>Coming Soon</button>
     </div>
